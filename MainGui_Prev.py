@@ -849,9 +849,42 @@ class MGUI(wx.Frame):
         paths = [ ]
         if dlg.ShowModal() == wx.ID_OK:
             paths = dlg.GetPaths()
+        dlg.Destroy()            
         return paths
-        dlg.Destroy()
 
+#    def GridUpdate( self, GridList, FB , Grid =  self.DBAGrid , NewGrid = 1):
+#        self.text_path.ChangeValue( FB.path )
+#        self.text_xpath.ChangeValue( FB.lastselect )
+
+#        Gc = Grid.GetNumberCols()
+#        Gr = Grid.GetNumberRows()        
+#        Dc = len(GridList[0])
+#        Dr = len(GridList)-1 # for titles        
+#        if NewGrid == 1:
+#            if Dc > Gc:
+#                Grid.AppendCols(Dc-Gc)
+#            elif Dc < Gc:
+#                Grid.DeleteCols(0,Gc-Dc)            
+#            Grid.DeleteRows(0,Gr)
+#            x=0
+#            for each in GridList[0]:
+#                Grid.SetColLabelValue(x,each)
+#                x += 1
+#            if Dr > Gr:
+#                Grid.AppendRows(Dr-Gr)
+#            elif Dr < Gr:
+#                Grid.DeleteRows(0,Gr-Dr)
+#            Gr = Dr
+#        else:
+#            Grid.AppendRows(Dr)
+#            Gr += Dr
+#        x=0
+#        while x < len(GridList)-1:
+#            y=0
+#            for each in GridList[x+1]:
+#                Grid.SetCellValue(x+(Gr-Dr),y,each)
+#                y += 1
+#            x += 1        
 
     def DBAGridUpdate( self, GridList , FB ):
 

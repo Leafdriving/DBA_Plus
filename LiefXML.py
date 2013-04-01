@@ -19,6 +19,7 @@ import firebirdsql
 import sys
 import string
 import shutil
+import DBA_Manu
 
 XMLPathList = [ ]
 NodeList = [ ]
@@ -242,10 +243,15 @@ class GUITreeNode:
         elif self.ctype == "SUBITEM":
             FB = XMLFileList[self.XMLFileListNo * -1]               
             self.display = "[x" + str(self.qty) + "] " + self.text
-            if "M" == FB.select( "MORP","ITEM", " where ITEMCODE like '" + self.text + "'" )[1][0]:
-                _GUI.cicon = _GUI.iconSUBITEM
+            rmorp = FB.select( "MORP","ITEM", " where ITEMCODE like '" + self.text + "'" )
+            if len(rmorp) <= 1:
+                print "Error - " + self.text + " returned empty"
+                _GUI.cicon =_GUI.iconPODETL
             else:
-                _GUI.cicon =_GUI.iconPODETL            
+                if "M" == FB.select( "MORP","ITEM", " where ITEMCODE like '" + self.text + "'" )[1][0]:
+                    _GUI.cicon = _GUI.iconSUBITEM
+                else:
+                    _GUI.cicon =_GUI.iconPODETL            
         elif self.ctype == "HEADING":
             self.display = self.text + "[" + str(self.qty) + "]"
             _GUI.cicon = _GUI.iconHEADING
@@ -317,7 +323,30 @@ def initXMLTree(_GUI):
 ###################################################  definition end #############################################################################################
 
 
+
+
 parseStr = lambda x: x.isalpha() and x or x.isdigit() and int(x) or x.isalnum() and x or len(set(string.punctuation).intersection(x)) == 1 and x.count('.') == 1 and float(x) or x
+
+def UpdateTransfer(cNode,_GUI):
+    print "Update Transfer Reached"
+    FB = XMLFileList[cNode.XMLFileListNo * -1]
+    RootItemList = FB.select( FromSettings("./Transfer/ITEM") , "ITEM", " where ITEMCODE like '" + cNode.text + "'" , int( FromSettings("./Tables/DQTY") ) )[1]
+    print RootItemList
+    
+#    for each in FB.retlist[1:]:
+#        addnode(cNode.path + "/" + each[0],_GUI,"ITEM",table,1,"",-1)
+#        cBOMMNO = FB.select("BOMMNO","BOMMASTER","where PITEMCODE='" + each[0] + "'")
+#        if len(cBOMMNO) > 1:
+#            cBOMMNO = cBOMMNO[1][0]
+#            cSTAGES = FB.select( "STAGE,DESCRIPT,WORKCENTERNAME" , "BOMSTAGES", " where BOMMNO=" + str(cBOMMNO) , int( FromSettings("./Tables/DQTY") ) )[1:]
+#            for eSTAGE in cSTAGES:
+#                addnode(cNode.path + "/" + each[0] + "/" + eSTAGE[2],_GUI,"METHOD",table,int(eSTAGE[0]),eSTAGE[1],-1)
+#                subs = FB.select( "USAGE,CITEMCODE", "BOMDEL", " where PITEMCODE='" + each[0] + "' AND STAGEID=" + str( int( eSTAGE[0] ) ))[1:]
+#                for esub in subs:
+#                    addnode(cNode.path + "/" + each[0] + "/" + eSTAGE[2] + "/" + esub[1],_GUI,"SUBITEM",table,esub[0],"",-1)    
+    
+    
+
 
 def formattime( seconds ):
     minutes = 0

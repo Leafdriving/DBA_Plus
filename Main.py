@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 import xml.etree.ElementTree as ET
 import wx,os,sys,time
@@ -8,7 +7,6 @@ from wxPython.wx import *
 
 import MainGui_Prev as MainGui
 import LiefXML
-#import Init
 
 
 #    f = locals()[Event]
@@ -37,6 +35,7 @@ def EH(Event,_GUI, evt = ""):
             print cNode.path
             path = cNode.path[:cNode.path.find("/",cNode.path.find("/")+1)] + "/Transfer/" + cNode.text
             LiefXML.addnode(path,_GUI,cNode.ctype,cNode.table,1,"",-1)
+            LiefXML.UpdateTransfer(cNode,_GUI)
     elif Event == "EH_RightClick":
         _GUI.NEvent( Event )
         itm = evt.GetItem()
