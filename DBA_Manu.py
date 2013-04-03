@@ -15,8 +15,8 @@ class DBA():
         return Item(self,itmn)
     def Method(self,itmn,meth):
         return Method(self,itmn,meth)
-    def SubItem(self,ClassItem,qty):
-        return SubItem(self,ClassItem,qty)
+    def SubItem(self, ClassItem ,qty ):
+        return SubItem(ClassItem ,qty )
     def ItemLink(self,DB,itmn,descript):
         return ItemLink(self,DB,itmn,descript)
 
@@ -69,7 +69,7 @@ class Item():
         return self.dic[f]
 
 class SubItem():
-    def __init__(self,ClassItem,qty):
+    def __init__(self, ClassItem , qty):
         self.item = ClassItem
         self.qty = qty
     

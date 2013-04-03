@@ -14,7 +14,7 @@
   </Tables>
   <Transfer>
     <ITEM>ITEMCODE,DESCRIPT,UOM,CATEGORY,MORP,PICTURE</ITEM>
-    <BOMSTAGES>STAGE, BOMMNO, DESCRIPT, WORKCENTERNAME, UTILIZATION, SETUPHOURS, PARTSHOUR, PROCESS_ID, MACHINESID</BOMSTAGES>	
+    <BOMSTAGES>STAGE,BOMMNO,DESCRIPT,WORKCENTERNAME,UTILIZATION,SETUPHOURS,PARTSHOUR,PROCESS_ID,MACHINESID</BOMSTAGES>	
     <BOMDEL>PITEMCODE,CITEMCODE,DESCRIPT,LINNO,USAGE,BOMMNO,NOTES,STAGEID</BOMDEL>
     <ITEMDOC>ITEMID,DESCRIPT,DIREC,ITEMDOC_DOCTYPE</ITEMDOC>
   </Transfer>
@@ -115,11 +115,133 @@ http://wxpython.org/Phoenix/docs/html/html_overview.html
 </table>
     ]]></BOMSTAGES>
   <BOMSTAGES_END></BOMSTAGES_END><!-- BOMSTAGES_END Used to close Tables if desired  -->
+    <JinjaBlocks><![CDATA[
+{% block ItemBlock %}ItemBlock
+{% endblock ItemBlock %}
+
+{% block SubItemBlock %}SubItemBlock
+{% endblock SubItemBlock %}
+
+{% block MethodBlock %}MethodBlock
+{% endblock MethodBlock %}
+
+{% block SOBlock %}SOBlock
+{% endblock SOBlock %}
+
+{% block POBlock %}POBlock
+{% endblock POBlock %}
+
+  ]]></JinjaBlocks>
+  <JinjaItem><![CDATA[
+  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<HTML>
+<HEAD>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <TITLE>TITLE-Not Visible</TITLE>
+</HEAD>
+<BODY>
+{% for SubItem in SubItemList recursive %}
+{% set Item = SubItem.item %}
+{% set ItemQty = SubItem.qty %}
+{% set Temp = [ ] %}
+<TABLE WIDTH="1000" BORDER="1" CELLPADDING="2" CELLSPACING="2">
+    <TR>
+      <TD ALIGN="RIGHT" VALIGN="BOTTOM" WIDTH={INDENT}*16>
+      <IMG WIDTH=16 HEIGHT="16" SRC="Icons\SUBITEM-16.png"></TD>
+      <TD WIDTH=70><FONT SIZE="+3">x{{ ItemQty }}</FONT></TD>
+      <TD WIDTH=30><IMG WIDTH="48" HEIGHT="48" ALT="Prod" SRC="Icons\NA-48.png"></td>
+      <TD>
+      <TABLE WIDTH="100%" BORDER="1" CELLPADDING="2" CELLSPACING="2">
+        <TBODY>
+          <TR>
+            <TD><FONT SIZE="+2">{{ Item.Field("ITEMCODE") }}</FONT><BR> 
+            <FONT SIZE="1">{{ Item.Field("DESCRIPT") }}</FONT></TD>
+            <TD WIDTH=300>
+			<FONT COLOR="RED" SIZE="1">Qty On Hand:</FONT><FONT SIZE="1">{{ Item.Field("QTYONHAND") }}</FONT><BR>
+			<FONT COLOR="RED" SIZE="1">Category:</FONT><FONT SIZE="1">({{ Item.Field("MORP") }}){{ Item.Field("CATEGORY") }}</FONT>		
+           </TD>
+          </TR>
+        </TBODY>
+      </TABLE>
+      </TD>
+    </TR>
+</TABLE>
+{% for Method in Item %}
+<TABLE WIDTH="1000" BORDER="1" CELLPADDING="2" CELLSPACING="2">
+    <TR>
+      <TD ALIGN="RIGHT" WIDTH=16>
+      <IMG WIDTH="16" HEIGHT="16" SRC="Icons\METHOD-16.png">      
+      </TD>
+      <TD WIDTH=30>{{ Method.Field("STAGE") }}</TD>
+      <TD WIDTH=300>{{ Method.Field("WORKCENTERNAME") }} [ {{ Method.Field("DESCRIPT") }} ]</TD>
+      <TD ALIGN="RIGHT">{{ Method.Field("SETUPHOURS") }}</TD>
+      <TD WIDTH="100">{{ Method.Field("PARTSHOUR") }}</TD>
+    </tr>
+</table>
+{%- if Method.SubItems -%}  {% set Temp = Method.SubItems %}   {%- endif %}
+{% endfor %}
+{%- if Temp -%}  {{ loop(Temp) }}   {%- endif %}
+{% endfor %}
+</BODY>
+</HTML>  
+  ]]></JinjaItem>
+  <Help><![CDATA[
+  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>Help Page</title>
+</head>
+<body>
+<div style="text-align: center;"><font size="+3">DBA
+PLUS</font><br>
+</div>
+<FONT COLOR="RED">Programmed By:</FONT>Stacy Lief Kelly <a href="">Leafdriving@hotmail.com</a><br>
+<FONT COLOR="RED">Version:</FONT>DBA Plus V1.1 Compiled April 2, 2013<br>
+<FONT COLOR="RED">Rights:</FONT><BR>
+This is an open source project, currently under development. USE AT OWN
+RISK. Software supplied AS IS WITHOUT SUPPORT.<br>
+Latest Code Source and Distribution can be located at: <a
+ href="">https://github.com/Leafdriving/DBA_Plus</a><br>
+<br>
+<FONT COLOR="RED">Instalation:</FONT>
+This software Requires:<br>
+<ul>
+  <li>(if from&nbsp;compiled installer) - &gt; Windows
+(x64) &nbsp;- (if
+source -&gt; with Python Installed - See Github for dependencies)
+any operating system</li>
+  <li>A DBA Firebird Database As Per&nbsp;<a
+ href="">http://www.dbamanufacturing.com</a></li>
+  <li>FirebirdSQL Server Running On This Station(V1.5). Can be
+download Here: <a href="">http://www.firebirdsql.org/en/firebird-1-5</a>.
+  </li>
+</ul>
+<Br><Br>
+<FONT COLOR="RED">Conventions:</FONT>
+This software has addopted the following conventions:<br>
+<ul>
+  <li>Standard SQL searches as defined Here:  <a
+ href="">http://www.w3schools.com/sql/sql_select.asp</a>.</li>
+  <li>Standard XML searches using XPath as defined Here: <a
+ href="">http://www.w3schools.com/xpath/xpath_syntax.asp</a>.</li>
+  <li>Standard Jinja Display Templates as defined Here: <a
+ href="">http://jinja.pocoo.org/docs/templates</a>
+(Stored in Settings.xml)</li>
+  <li><FONT COLOR="RED">Reduced HTML Display</FONT>
+as defined Here: <a
+ href="">http://wxpython.org/Phoenix/docs/html/html_overview.html</a>
+(Created By Jinja Display Templates)</li>
+</ul>
+</body></html>]]></Help>
   </Html>
   <DBAFiles>
 	<TempPath>C:\DBA Help</TempPath>
 	<Training>C:\Users\Lief-W7\Desktop\Dropbox\EJDB.FDB</Training>
 	<Main>C:\Users\Lief-W7\Desktop\Dropbox\Dba-Auto-It\Exports\Main\EJDB.FDB</Main>
+	<Junk>{%- if Method.SubItems -%}  {{ loop(Method.SubItems) }}   {%- endif %}</Junk>
   </DBAFiles>
 </Settings>
 

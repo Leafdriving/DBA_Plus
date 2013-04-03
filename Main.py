@@ -27,6 +27,9 @@ def EH(Event,_GUI, evt = ""):
         LiefXML.OpenXMLFile(_GUI,_GUI.OpenXMLFiles()[0])
         _GUI.CEvent()
         return 1
+    elif Event == "EH_Help":
+        print "help clicked"
+        LiefXML.UpdateHTMLHelp(_GUI)
     elif Event == "EH_RightClicked":
         RCClicked = _GUI.RClickDic[ evt.GetId() ]
         cNode = _GUI.RCNode

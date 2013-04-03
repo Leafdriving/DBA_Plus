@@ -20,6 +20,7 @@ import sys
 import string
 import shutil
 import DBA_Manu
+from jinja2 import Template
 
 XMLPathList = [ ]
 NodeList = [ ]
@@ -128,6 +129,7 @@ class FireBird:
         self.where = ""
         self.limit = ""
         self.retlist = []
+        self.DB = DBA_Manu.DBA(path)
         
         self.Items = [ ]
         self.cur.execute("SELECT ITEMCODE FROM ITEM")
@@ -211,10 +213,13 @@ class GUITreeNode:
         self.XMLFileListNo = len(XMLFileList)-1
         self.extra = ""
         self.display=""
+        self.DB = ""
 
     def makedisplay(self,_GUI,newnode):
         if self.ctype == "ITEM":
-            FB = XMLFileList[self.XMLFileListNo * -1]            
+            FB = XMLFileList[self.XMLFileListNo * -1]
+#            DB = FB.DB
+#            self.DB = DB.Item(self.text)
             self.display = self.text
             if "M" == FB.select( "MORP","ITEM", " where ITEMCODE like '" + self.text + "'" )[1][0]:
                 _GUI.cicon = _GUI.iconITEM
@@ -318,8 +323,42 @@ def initXMLTree(_GUI):
         os.remove(temp_path + "\\Main.FDB")
     shutil.copy2(Training_path, temp_path + "\\Training.FDB")
     shutil.copy2(Main_path, temp_path + "\\Main.FDB")
+    
+    _GUI.TM_INTree.AddColumn("Transfer")
+    _GUI.MT_INTree.AddColumn("Transfer")
+    _GUI.TM_IUTree.AddColumn("Transfer")        
+    _GUI.MT_IUTree.AddColumn("Transfer")      
+    for each in FromSettings("./Transfer/ITEM").split(','):
+        _GUI.TM_INTree.AddColumn(each)
+        _GUI.MT_INTree.AddColumn(each)
+        _GUI.TM_IUTree.AddColumn(each)
+        _GUI.MT_IUTree.AddColumn(each)          
+    _GUI.TM_INTreeRoot = _GUI.TM_INTree.AddRoot("Root")
+    _GUI.MT_INTreeRoot = _GUI.MT_INTree.AddRoot("Root")    
+    _GUI.TM_IUTreeRoot = _GUI.TM_IUTree.AddRoot("Root")    
+    _GUI.MT_IUTreeRoot = _GUI.MT_IUTree.AddRoot("Root")     
+
+    _GUI.TM_IMTree.AddColumn("Transfer")        
+    _GUI.MT_IMTree.AddColumn("Transfer")        
+    for each in FromSettings("./Transfer/BOMSTAGES").split(','):
+        _GUI.TM_IMTree.AddColumn(str(each))
+        _GUI.MT_IMTree.AddColumn(str(each))        
+    _GUI.TM_IMTreeRoot = _GUI.TM_IMTree.AddRoot("Root")    
+    _GUI.MT_IMTreeRoot = _GUI.MT_IMTree.AddRoot("Root")      
+
+    _GUI.TM_ICTree.AddColumn("Transfer")        
+    _GUI.MT_ICTree.AddColumn("Transfer")      
+    for each in FromSettings("./Transfer/BOMDEL").split(','):
+        _GUI.TM_ICTree.AddColumn(str(each))
+        _GUI.MT_ICTree.AddColumn(str(each))        
+    _GUI.TM_ICTreeRoot = _GUI.TM_ICTree.AddRoot("Root")    
+    _GUI.MT_ICTreeRoot = _GUI.MT_ICTree.AddRoot("Root")     
+    
+    
     OpenDBAFile(_GUI,temp_path + "\\Training.FDB","Training")
     OpenDBAFile(_GUI,temp_path + "\\Main.FDB","Main")
+    
+    
 ###################################################  definition end #############################################################################################
 
 
@@ -328,10 +367,12 @@ def initXMLTree(_GUI):
 parseStr = lambda x: x.isalpha() and x or x.isdigit() and int(x) or x.isalnum() and x or len(set(string.punctuation).intersection(x)) == 1 and x.count('.') == 1 and float(x) or x
 
 def UpdateTransfer(cNode,_GUI):
-    print "Update Transfer Reached"
-    FB = XMLFileList[cNode.XMLFileListNo * -1]
-    RootItemList = FB.select( FromSettings("./Transfer/ITEM") , "ITEM", " where ITEMCODE like '" + cNode.text + "'" , int( FromSettings("./Tables/DQTY") ) )[1]
-    print RootItemList
+    _GUI.TM_INTree.AppendItem( _GUI.TM_INTreeRoot , cNode.text)
+
+#    print "Update Transfer Reached" 
+#    FB = XMLFileList[cNode.XMLFileListNo * -1]
+#    RootItemList = FB.select( FromSettings("./Transfer/ITEM") , "ITEM", " where ITEMCODE like '" + cNode.text + "'" , int( FromSettings("./Tables/DQTY") ) )[1]
+#    print RootItemList
     
 #    for each in FB.retlist[1:]:
 #        addnode(cNode.path + "/" + each[0],_GUI,"ITEM",table,1,"",-1)
@@ -365,7 +406,29 @@ def formattime( seconds ):
         rettext += " " + str(seconds) + " Sec"
     return rettext
 
+def UpdateHTMLHelp(_GUI):
+    HelpHTML = FromSettings("./Html/Help")
+    _GUI.Display_Jinja.SetValue("")    
+    _GUI.Display_Source.SetValue(HelpHTML)
+    _GUI.Display_HTML.SetPage(HelpHTML)
+    _GUI.MainVert_TreeAndTabs.ChangeSelection(0)
+    _GUI.Tree_Tabs.ChangeSelection(2)
+    _GUI.Display_TABS.ChangeSelection(0)
+    
 def UpdateHTMLDisplay(cNode,_GUI,qmult=1):
+    DB = XMLFileList[cNode.XMLFileListNo * -1].DB
+    JinjaItem = FromSettings("./Html/JinjaItem")
+    JinjaBlocks = FromSettings("./Html/JinjaBlocks")
+    btemplate = Template(JinjaBlocks)
+    template = Template(JinjaItem)
+    temp = DB.SubItem( DB.Item(cNode.text), 1)
+    html = template.render( SubItemList = [ temp ] , Blocks = btemplate)
+    
+    _GUI.Display_Jinja.SetValue(JinjaItem)    
+    _GUI.Display_Source.SetValue(html)
+    _GUI.Display_HTML.SetPage(html)
+
+def UpdateHTMLDisplayOLD(cNode,_GUI,qmult=1):
     FB = XMLFileList[cNode.XMLFileListNo * -1]
     table = FB.table
     html_body = UpdateHTMLDisplayRecursive(cNode.text,cNode,_GUI,qmult)
@@ -426,6 +489,7 @@ def MSubElement(ParentID,ElementName,Value=""):
     if Value <> "":
         newele.text = Value
     return newele
+
 
  
 def addnode(path,_GUI,ctype="",table="",qty=1,extra="",mult=1):

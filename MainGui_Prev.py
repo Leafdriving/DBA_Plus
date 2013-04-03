@@ -6,6 +6,7 @@ import wx
 import wx.grid
 import wx.html
 from wxPython.wx import *
+import wx.gizmos
 
 import Main
 import sys
@@ -102,6 +103,11 @@ class MGUI(wx.Frame):
         self.MDBA.AppendItem(self.MTiming)
         self.MainGUI_menubar.Append(self.MDBA, "DBA")
         self.SetMenuBar(self.MainGUI_menubar)
+        
+        self.MHelp = wx.Menu()
+        self.MHelp_Help = wx.MenuItem(self.MHelp, wx.NewId(), "Display Help","",wx.ITEM_NORMAL)
+        self.MHelp.AppendItem(self.MHelp_Help)        
+        self.MainGUI_menubar.Append(self.MHelp, "Help")
         # Menu Bar end
         
         # Tool Bar
@@ -119,6 +125,8 @@ class MGUI(wx.Frame):
         self.MainGUI_toolbar.AddSeparator()
         self.tb9 = self.MainGUI_toolbar.AddLabelTool(wx.NewId(), "Exit", wx.Bitmap(IconPath + "Exit-24.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, "Exit Application", "")
         # Tool Bar end
+        
+        
         self.MainVert_TreeAndTabs = wx.Notebook(self, -1, style=wx.NB_BOTTOM)
         self.Tree_Items_Divider = wx.SplitterWindow(self.MainVert_TreeAndTabs, -1, style=wx.SP_3D | wx.SP_BORDER)
         self.Tree_Panel = wx.Panel(self.Tree_Items_Divider, -1)
@@ -144,37 +152,69 @@ class MGUI(wx.Frame):
         self.Add = wx.Button(self.notebook_1_pane_2, -1, "Add")
         self.DBAGrid = wx.grid.Grid(self.notebook_1_pane_2, -1, size=(1, 1))
         
+#        self.Display_TABS = wx.Notebook(self.Tree_Tabs, -1, style=0)
+#        self.Display_HTML = wx.html.HtmlWindow(self.Display_TABS , wx.ID_ANY, style=wx.NO_BORDER)
+#        self.Display_Source = wx.TextCtrl(self.Display_TABS, -1, "Source Code To Go Here", style=wx.TE_MULTILINE | wx.TE_READONLY)
         
-#        self.Tree_Tabs_pane_3 = wx.html.HtmlWindow(self.Tree_Tabs, wx.ID_ANY, style=wx.NO_BORDER)
         self.Display_TABS = wx.Notebook(self.Tree_Tabs, -1, style=0)
         self.Display_HTML = wx.html.HtmlWindow(self.Display_TABS , wx.ID_ANY, style=wx.NO_BORDER)
-        self.Display_Source = wx.TextCtrl(self.Display_TABS, -1, "Source Code To Go Here", style=wx.TE_MULTILINE | wx.TE_READONLY)
-
-
-
+        self.Display_Source = wx.TextCtrl(self.Display_TABS, -1, "Source Code To Go Here", style=wx.TE_PROCESS_ENTER | wx.TE_MULTILINE)
+        self.Display_Jinja = wx.TextCtrl(self.Display_TABS, -1, "", style=wx.TE_PROCESS_ENTER | wx.TE_MULTILINE)        
 
         self.Tree_Tabs_pane_4 = wx.Panel(self.Tree_Tabs, -1)
         self.Tree_Tabs_pane_5 = wx.Panel(self.Tree_Tabs, -1)
         self.Tree_Tabs_pane_6 = wx.Panel(self.Tree_Tabs, -1)
+  
+        
+#        self.ExportTabs = wx.Notebook(self.Tree_Tabs, -1, style=0)
+#        self.TM_ITEMNEW = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+#        self.TM_ITEMEXI = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+#        self.TM_ROUTING = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+#        self.TM_COMP = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+#        self.MT_ITEMNEW = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+#        self.MT_ITEMEXI = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+#        self.MT_ROUTING = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+#        self.MT_COMP = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
+        
+        self.Export = wx.Notebook(self.Tree_Tabs, -1, style=0)
+        self.T_M = wx.Notebook(self.Export, -1, style=0)
+        self.TM_INTree = wx.gizmos.TreeListCtrl(self.T_M, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
+#        self.TM_INTree.AddColumn("Transfer")
+#        for each in range(5):
+#            self.TM_INTree.AddColumn(str(each))
+#        self.TM_INTreeRoot = self.TM_INTree.AddRoot("Root")
+    
+        self.TM_IUTree = wx.gizmos.TreeListCtrl(self.T_M, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
+#        self.TM_IUTree.AddColumn("Transfer")        
+#        for each in range(5):
+#            self.TM_IUTree.AddColumn(str(each))
+#        self.TM_IUTreeRoot = self.TM_IUTree.AddRoot("Root")
+        
+        self.TM_IMTree = wx.gizmos.TreeListCtrl(self.T_M, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
+#        self.TM_IMTree.AddColumn("Transfer")        
+#        for each in range(5):
+#            self.TM_IMTree.AddColumn(str(each))
+#        self.TM_IMTreeRoot = self.TM_IMTree.AddRoot("Root")
+        
+        self.TM_ICTree = wx.gizmos.TreeListCtrl(self.T_M, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
+#        self.TM_ICTree.AddColumn("Transfer")        
+#        for each in range(5):
+#            self.TM_ICTree.AddColumn(str(each))
+#        self.TM_ICTreeRoot = self.TM_ICTree.AddRoot("Root")
+        
+        self.M_T = wx.Notebook(self.Export, -1, style=0)
+        self.MT_INTree = wx.gizmos.TreeListCtrl(self.M_T, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
+        self.MT_IUTree = wx.gizmos.TreeListCtrl(self.M_T, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
+        self.MT_IMTree = wx.gizmos.TreeListCtrl(self.M_T, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
+        self.MT_ICTree = wx.gizmos.TreeListCtrl(self.M_T, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)        
         
         
-        self.ExportTabs = wx.Notebook(self.Tree_Tabs, -1, style=0)
-        self.TM_ITEMNEW = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        self.TM_ITEMEXI = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        self.TM_ROUTING = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        self.TM_COMP = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        self.MT_ITEMNEW = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        self.MT_ITEMEXI = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        self.MT_ROUTING = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        self.MT_COMP = wx.grid.Grid(self.ExportTabs, -1, size=(1, 1))
-        
-        
+       
         self.Vslider = wx.Slider(self.panel_2, -1, 0, 0, 10, style=wx.SL_VERTICAL | wx.SL_AUTOTICKS)
         self.Hslider = wx.Slider(self.panel_2, -1, 0, 0, 10, style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS)
         self.HPos = wx.TextCtrl(self.panel_2, -1, "1/10")
         self.StatusEdit = wx.TextCtrl(self.MainVert_TreeAndTabs, -1, "")
-#        self.StatusEdit = wx.html.HtmlWindow(self.MainVert_TreeAndTabs, wx.ID_ANY, style=wx.NO_BORDER)
-#        self.StatusEdit.SetPage(html_code)
+
         self.Event_Edit = wx.TextCtrl(self.MainVert_TreeAndTabs, -1, style = wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_AUTO_URL )        
         self.Error_Edit = wx.TextCtrl(self.MainVert_TreeAndTabs, -1,  style = wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_AUTO_URL ) 
         self.Settings_Pane = wx.Panel(self.MainVert_TreeAndTabs, -1)
@@ -205,7 +245,9 @@ class MGUI(wx.Frame):
         self.Bind(wx.EVT_TOOL, self.EH_Engineering, id=self.tb7.GetId())
         self.Bind(wx.EVT_TOOL, self.EH_Timing, id=self.tb7.GetId())
         self.Bind(wx.EVT_TOOL, self.EH_Exit, id=self.tb9.GetId())
-#        self.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK, self.EH_Tree_Right_Click, self.Tree)
+        
+        self.Bind(wx.EVT_TOOL, self.EH_Help, id=self.MHelp_Help.GetId())
+
         self.Bind(wx.EVT_TREE_KEY_DOWN, self.EH_Tree_Key_Down, self.Tree)
         self.Bind(wx.EVT_TREE_SEL_CHANGED, self.EH_Tree_Sel_Changed, self.Tree)
         self.Bind(wx.EVT_TREE_DELETE_ITEM, self.EH_Tree_Delete, self.Tree)
@@ -295,46 +337,7 @@ class MGUI(wx.Frame):
         # end wxGlade
 
     def __set_properties(self):
-        self.TM_ITEMNEW.CreateGrid(0, 5)
-        self.TM_ITEMNEW.SetRowLabelSize(20)
-        self.TM_ITEMNEW.SetColLabelSize(20)        
-        self.TM_ITEMNEW.SetColLabelValue(0, "ITEMCODE")
-        self.TM_ITEMNEW.SetColLabelValue(1, "DESCRIPT")
-        self.TM_ITEMNEW.SetColLabelValue(2, "UOM")
-        self.TM_ITEMNEW.SetColLabelValue(3, "CATEGORY")
-        self.TM_ITEMNEW.SetColLabelValue(4, "MORP")
-        self.TM_ITEMEXI.CreateGrid(0, 4)
-        self.TM_ITEMEXI.SetRowLabelSize(20)
-        self.TM_ITEMEXI.SetColLabelSize(20)            
-        self.TM_ITEMEXI.SetColLabelValue(0, "ITEMCODE")
-        self.TM_ITEMEXI.SetColLabelValue(1, "DESCRIPT")
-        self.TM_ITEMEXI.SetColLabelValue(2, "CATEGORY")
-        self.TM_ITEMEXI.SetColLabelValue(3, "MORP")
-        self.TM_ROUTING.CreateGrid(0, 3)
-        self.TM_ROUTING.SetRowLabelSize(20)
-        self.TM_ROUTING.SetColLabelSize(20)           
-        self.TM_ROUTING.SetColLabelValue(0, "BOM PARENT")
-        self.TM_ROUTING.SetColLabelValue(1, "SEQUENCE")
-        self.TM_ROUTING.SetColLabelValue(2, "WORKCENTER")
-        self.TM_COMP.CreateGrid(0, 4)
-        self.TM_COMP.SetRowLabelSize(20)
-        self.TM_COMP.SetColLabelSize(20)           
-        self.TM_COMP.SetColLabelValue(0, "SEQUENCE")
-        self.TM_COMP.SetColLabelValue(1, "BOM PARENT")
-        self.TM_COMP.SetColLabelValue(2, "COMPONENT")
-        self.TM_COMP.SetColLabelValue(3, "USAGE")
-        self.MT_ITEMNEW.CreateGrid(0, 3)
-        self.MT_ITEMNEW.SetRowLabelSize(20)
-        self.MT_ITEMNEW.SetColLabelSize(20)             
-        self.MT_ITEMEXI.CreateGrid(0, 3)
-        self.MT_ITEMEXI.SetRowLabelSize(20)
-        self.MT_ITEMEXI.SetColLabelSize(20)            
-        self.MT_ROUTING.CreateGrid(0, 3)
-        self.MT_ROUTING.SetRowLabelSize(20)
-        self.MT_ROUTING.SetColLabelSize(20)           
-        self.MT_COMP.CreateGrid(0, 3)     
-        self.MT_COMP.SetRowLabelSize(20)
-        self.MT_COMP.SetColLabelSize(20)          
+         
         # begin wxGlade: MGUI.__set_properties
         self.SetTitle("3G Lighting Inhancement Program")
         self.SetSize((800, 600))
@@ -400,34 +403,61 @@ class MGUI(wx.Frame):
         sizer_4.Add(self.DBAGrid, 1, wx.EXPAND, 0)
         self.notebook_1_pane_2.SetSizer(sizer_4)
         
+#        self.Display_TABS.AddPage(self.Display_HTML, "Display")
+#        self.Display_TABS.AddPage(self.Display_Source, "Source")        
+#        self.Tree_Tabs.AddPage(self.XMLGrid, "XML")
+#        self.Tree_Tabs.AddPage(self.notebook_1_pane_2, "Filter")
+#        self.Tree_Tabs.AddPage(self.Display_TABS, "Display")
+#        self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_4, "SalesOrder")
+#        self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_5, "Jobs")
+#        self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_6, "POs")
+#        self.Tree_Tabs.AddPage(self.ExportTabs, "Export")        
+#        sizer_3.Add(self.Tree_Tabs, 1, wx.EXPAND, 0)
+#        sizer_3.Add(self.Vslider, 0, wx.EXPAND, 0)
+#        sizer_1.Add(sizer_3, 1, wx.EXPAND, 0)
+#        sizer_2.Add(self.Hslider, 1, wx.EXPAND, 0)
+#        sizer_2.Add(self.HPos, 0, 0, 0)
+#        sizer_1.Add(sizer_2, 0, wx.EXPAND | wx.ALIGN_BOTTOM, 0)
+
+#        self.ExportTabs.AddPage(self.TM_ITEMNEW, "T-M ItemNew")
+#        self.ExportTabs.AddPage(self.TM_ITEMEXI, "T-M ItemExi")
+#        self.ExportTabs.AddPage(self.TM_ROUTING, "T-M Routing")
+#        self.ExportTabs.AddPage(self.TM_COMP, "T-M Comp")
+#        self.ExportTabs.AddPage(self.MT_ITEMNEW, "M-T ItemNew")
+#        self.ExportTabs.AddPage(self.MT_ITEMEXI, "M-T ItemExi")
+#        self.ExportTabs.AddPage(self.MT_ROUTING, "M-T Routing")
+#        self.ExportTabs.AddPage(self.MT_COMP, "M-T Comp")
+
         self.Display_TABS.AddPage(self.Display_HTML, "Display")
-        self.Display_TABS.AddPage(self.Display_Source, "Source")        
-        
+        self.Display_TABS.AddPage(self.Display_Source, "Html")
+        self.Display_TABS.AddPage(self.Display_Jinja, "Jinja")
+        self.T_M.AddPage(self.TM_INTree, "Item-New")
+        self.T_M.AddPage(self.TM_IUTree, "Item-Update")
+        self.T_M.AddPage(self.TM_IMTree, "Methods")
+        self.T_M.AddPage(self.TM_ICTree, "Components")
+        self.M_T.AddPage(self.MT_INTree, "ItemNew")
+        self.M_T.AddPage(self.MT_IUTree, "ItemUpdate")
+        self.M_T.AddPage(self.MT_IMTree, "Methods")
+        self.M_T.AddPage(self.MT_ICTree, "Components")
+        self.Export.AddPage(self.T_M, "T->M")
+        self.Export.AddPage(self.M_T, "M-T")
         self.Tree_Tabs.AddPage(self.XMLGrid, "XML")
         self.Tree_Tabs.AddPage(self.notebook_1_pane_2, "Filter")
         self.Tree_Tabs.AddPage(self.Display_TABS, "Display")
         self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_4, "SalesOrder")
         self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_5, "Jobs")
         self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_6, "POs")
-        self.Tree_Tabs.AddPage(self.ExportTabs, "Export")        
+        self.Tree_Tabs.AddPage(self.Export, "Export")
         sizer_3.Add(self.Tree_Tabs, 1, wx.EXPAND, 0)
         sizer_3.Add(self.Vslider, 0, wx.EXPAND, 0)
         sizer_1.Add(sizer_3, 1, wx.EXPAND, 0)
         sizer_2.Add(self.Hslider, 1, wx.EXPAND, 0)
         sizer_2.Add(self.HPos, 0, 0, 0)
         sizer_1.Add(sizer_2, 0, wx.EXPAND | wx.ALIGN_BOTTOM, 0)
+
+        
         self.panel_2.SetSizer(sizer_1)
         self.Tree_Items_Divider.SplitVertically(self.Tree_Panel, self.panel_2)
-        
-        self.ExportTabs.AddPage(self.TM_ITEMNEW, "T-M ItemNew")
-        self.ExportTabs.AddPage(self.TM_ITEMEXI, "T-M ItemExi")
-        self.ExportTabs.AddPage(self.TM_ROUTING, "T-M Routing")
-        self.ExportTabs.AddPage(self.TM_COMP, "T-M Comp")
-        self.ExportTabs.AddPage(self.MT_ITEMNEW, "M-T ItemNew")
-        self.ExportTabs.AddPage(self.MT_ITEMEXI, "M-T ItemExi")
-        self.ExportTabs.AddPage(self.MT_ROUTING, "M-T Routing")
-        self.ExportTabs.AddPage(self.MT_COMP, "M-T Comp")        
-        
         self.MainVert_TreeAndTabs.AddPage(self.Tree_Items_Divider, "Main")
         self.MainVert_TreeAndTabs.AddPage(self.StatusEdit, "Status")
         self.MainVert_TreeAndTabs.AddPage(self.Event_Edit, "Event")
@@ -456,7 +486,9 @@ class MGUI(wx.Frame):
         exit()        
         self.tbicon.PopupMenu(self.tbicon.CreatePopupMenu())
 
-
+    def EH_Help(self, event):
+        Main.EH("EH_Help", self)
+        event.Skip()
     def EH_OpenXML(self, event):  # wxGlade: MGUI.<event_handler>
         Main.EH("EH_OpenXML", self)
         event.Skip()
