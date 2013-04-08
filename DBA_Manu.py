@@ -10,6 +10,12 @@ class DBA():
         out = self.select("PITEMCODE,BOMMNO","BOMMASTER")[1:]
         for each in out:
             self.BOMMNO[ each[0] ] = each[1]
+            
+    def IsItem(self,itmn):
+        if len(self.select("ITEMCODE","ITEM","where ITEMCODE like '" + itmn + "'")) == 1:
+            return False
+        else:
+            return True
 
     def Item(self,itmn):
         return Item(self,itmn)

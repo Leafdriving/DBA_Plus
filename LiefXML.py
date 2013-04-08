@@ -352,7 +352,15 @@ def initXMLTree(_GUI):
         _GUI.TM_ICTree.AddColumn(str(each))
         _GUI.MT_ICTree.AddColumn(str(each))        
     _GUI.TM_ICTreeRoot = _GUI.TM_ICTree.AddRoot("Root")    
-    _GUI.MT_ICTreeRoot = _GUI.MT_ICTree.AddRoot("Root")     
+    _GUI.MT_ICTreeRoot = _GUI.MT_ICTree.AddRoot("Root")
+    
+    x=0
+    for width in FromSettings("./Transfer/ITEMCOLWIDTH").split(','):
+        _GUI.TM_INTree.SetColumnWidth(x,int(width))
+        _GUI.MT_INTree.SetColumnWidth(x,int(width))
+        _GUI.TM_IUTree.SetColumnWidth(x,int(width))
+        _GUI.MT_IUTree.SetColumnWidth(x,int(width))
+        x +=1      
     
     
     OpenDBAFile(_GUI,temp_path + "\\Training.FDB","Training")
@@ -367,26 +375,104 @@ def initXMLTree(_GUI):
 parseStr = lambda x: x.isalpha() and x or x.isdigit() and int(x) or x.isalnum() and x or len(set(string.punctuation).intersection(x)) == 1 and x.count('.') == 1 and float(x) or x
 
 def UpdateTransfer(cNode,_GUI):
-    _GUI.TM_INTree.AppendItem( _GUI.TM_INTreeRoot , cNode.text)
+    if cNode.XMLFileListNo == -2:
+        print "From Training"
+        DB = XMLFileList[2].DB
+        ODB = XMLFileList[1].DB
+    elif cNode.XMLFileListNo == -1:
+        print "From Main"
+        DB = XMLFileList[1].DB
+        ODB = XMLFileList[2].DB
+    else:
+        print "From Where????"
+#    CTree.SetItemTextColour( CTreeNode, "BLUE")    
 
-#    print "Update Transfer Reached" 
-#    FB = XMLFileList[cNode.XMLFileListNo * -1]
-#    RootItemList = FB.select( FromSettings("./Transfer/ITEM") , "ITEM", " where ITEMCODE like '" + cNode.text + "'" , int( FromSettings("./Tables/DQTY") ) )[1]
-#    print RootItemList
+    UpdateTransferFillItemTree(_GUI.TM_INTree , _GUI.TM_INTreeRoot,DB,ODB,cNode.text,1)
+    _GUI.TM_INTree.ExpandAll(_GUI.TM_INTreeRoot)
     
-#    for each in FB.retlist[1:]:
-#        addnode(cNode.path + "/" + each[0],_GUI,"ITEM",table,1,"",-1)
-#        cBOMMNO = FB.select("BOMMNO","BOMMASTER","where PITEMCODE='" + each[0] + "'")
-#        if len(cBOMMNO) > 1:
-#            cBOMMNO = cBOMMNO[1][0]
-#            cSTAGES = FB.select( "STAGE,DESCRIPT,WORKCENTERNAME" , "BOMSTAGES", " where BOMMNO=" + str(cBOMMNO) , int( FromSettings("./Tables/DQTY") ) )[1:]
-#            for eSTAGE in cSTAGES:
-#                addnode(cNode.path + "/" + each[0] + "/" + eSTAGE[2],_GUI,"METHOD",table,int(eSTAGE[0]),eSTAGE[1],-1)
-#                subs = FB.select( "USAGE,CITEMCODE", "BOMDEL", " where PITEMCODE='" + each[0] + "' AND STAGEID=" + str( int( eSTAGE[0] ) ))[1:]
-#                for esub in subs:
-#                    addnode(cNode.path + "/" + each[0] + "/" + eSTAGE[2] + "/" + esub[1],_GUI,"SUBITEM",table,esub[0],"",-1)    
+    UpdateTransferFillItemTree(_GUI.TM_IUTree , _GUI.TM_IUTreeRoot,DB,ODB,cNode.text,2)
+    _GUI.TM_IUTree.ExpandAll(_GUI.TM_IUTreeRoot)
+
+    UpdateTransferFillItemTree(_GUI.TM_IMTree , _GUI.TM_IMTreeRoot,DB,ODB,cNode.text,3)
+    _GUI.TM_IMTree.ExpandAll(_GUI.TM_IMTreeRoot)
     
+    UpdateTransferFillItemTree(_GUI.TM_ICTree , _GUI.TM_ICTreeRoot,DB,ODB,cNode.text,4)
+    _GUI.TM_ICTree.ExpandAll(_GUI.TM_ICTreeRoot)    
+
     
+def SetMethodData(CTree,cNode,Method,DB,ODB):
+    S = FromSettings("./Transfer/BOMSTAGES").split(',')
+    Method.dic[ each ]
+    x=1
+    for each in S:
+        CTree.SetItemText( cNode ,  Method.dic[ each ] , x )
+        x += 1      
+
+def SetItemData(CTree,cNode,CItem,DB,ODB,Type):
+    S = FromSettings("./Transfer/ITEM").split(',')
+    IsItem = ODB.IsItem(CItem.Field(S[0]))    
+    if Type == 1:
+        if IsItem:
+            CTree.SetItemText( cNode ,  CItem.Field(S[0]) , 1 )
+            CTree.SetItemText( cNode ,  CItem.Field(S[1]) , 2 )
+            CTree.SetItemText( cNode ,  "Already" , 4 )
+            CTree.SetItemText( cNode ,  "Exists" , 6 )            
+            CTree.SetItemTextColour( cNode, "GRAY")
+        else:
+            CTree.SetItemTextColour( cNode, "BLUE")            
+            x=1
+            for each in S:
+                CTree.SetItemText( cNode ,  CItem.Field(each) , x )
+                x += 1      
+    elif Type == 2:
+        if IsItem:
+            dbs  =  DB.select(FromSettings("./Transfer/ITEM"),"ITEM"," WHERE ITEMCODE LIKE '" + CItem.Field(S[0]) + "'")
+            odbs = ODB.select(FromSettings("./Transfer/ITEM"),"ITEM"," WHERE ITEMCODE LIKE '" + CItem.Field(S[0]) + "'")
+            if dbs == odbs:
+                CTree.SetItemText( cNode ,  CItem.Field(S[0]) , 1 )
+                CTree.SetItemText( cNode ,  CItem.Field(S[1]) , 2 )
+                CTree.SetItemText( cNode ,  "Already" , 4 )
+                CTree.SetItemText( cNode ,  "Identical" , 6 )            
+                CTree.SetItemTextColour( cNode, "GRAY")   
+            else:
+                CTree.SetItemTextColour( cNode, "BLUE")            
+                x=1
+                for each in S:
+                    CTree.SetItemText( cNode ,  CItem.Field(each) , x )
+                    x += 1  
+        else:
+            CTree.SetItemText( cNode ,  CItem.Field(S[0]) , 1 )
+            CTree.SetItemText( cNode ,  CItem.Field(S[1]) , 2 )
+            CTree.SetItemText( cNode ,  "New" , 4 )
+            CTree.SetItemText( cNode ,  "Item" , 6 )            
+            CTree.SetItemTextColour( cNode, "GRAY")            
+            
+    elif Type == 3:
+        pass
+    elif Type == 4:
+        pass
+   
+
+
+def UpdateTransferFillItemTree(CTree,cNodeParent,DB,ODB,cITEMCODE,Type,Firstloop = True):
+    CItem = DB.Item(cITEMCODE)
+    
+    if Type == 3:
+        if Firstloop:
+            cNode = CTree.AppendItem( cNodeParent , CItem.Field("ITEMCODE") )
+            cNodeParent = cNode
+    else:
+        cNode = CTree.AppendItem( cNodeParent , CItem.Field("ITEMCODE") )
+        if Type != 4:
+            SetItemData(CTree,cNode,CItem,DB,ODB,Type)
+    
+    for Method in CItem:
+        CMethod = Method.Field("WORKCENTERNAME")
+        if Type == 3:
+            cNode = CTree.AppendItem( cNodeParent , "(" + Method.Field("STAGE") + ") " + CMethod + " (" + CItem.Field("ITEMCODE") + ")" )
+            SetMethodData(CTree,cNode,Method,DB,ODB)
+        for SubItem in Method:
+            UpdateTransferFillItemTree(CTree,cNode,DB,ODB,SubItem.item.Field("ITEMCODE"),Type, False)
 
 
 def formattime( seconds ):
