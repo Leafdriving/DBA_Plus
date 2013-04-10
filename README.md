@@ -9,7 +9,7 @@
 PLUS</font><br>
 </div>
 <FONT COLOR="RED">Programmed By:</FONT>Stacy Lief Kelly <a href="">Leafdriving@hotmail.com</a><br>
-<FONT COLOR="RED">Version:</FONT>DBA Plus V1.2 Compiled April 9, 2013<br>
+<FONT COLOR="RED">Version:</FONT>DBA Plus V1.3 Compiled April 9, 2013<br>
 <FONT COLOR="RED">Rights:</FONT><BR>
 This is an open source project, currently under development. USE AT OWN
 RISK. Software supplied AS IS WITHOUT SUPPORT.<br>
