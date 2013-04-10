@@ -7,6 +7,8 @@ class DBA():
         self.con = firebirdsql.connect(dsn="localhost:"+filepath, user='sysdba', password='masterkey')
         self.cur = "" #self.con.cursor()
         self.BOMMNO = { }
+        self.Itemdic = { }
+        self.Methoddic = { }
         out = self.select("PITEMCODE,BOMMNO","BOMMASTER")[1:]
         for each in out:
             self.BOMMNO[ each[0] ] = each[1]
@@ -18,11 +20,23 @@ class DBA():
             return True
 
     def Item(self,itmn):
-        return Item(self,itmn)
+        if itmn in self.Itemdic.keys():
+            return self.Itemdic[ itmn ]
+        else:
+            self.Itemdic[ itmn ] = Item(self,itmn)
+            return self.Itemdic[ itmn ]
+        
     def Method(self,itmn,meth):
-        return Method(self,itmn,meth)
+        key = meth + itmn
+        if key in self.Methoddic.keys():
+            return self.Methoddic[ key ]
+        else:
+            self.Methoddic[ key ] = Method(self,itmn,meth)
+        return self.Methoddic[ key ]
+    
     def SubItem(self, ClassItem ,qty ):
         return SubItem(ClassItem ,qty )
+    
     def ItemLink(self,DB,itmn,descript):
         return ItemLink(self,DB,itmn,descript)
 

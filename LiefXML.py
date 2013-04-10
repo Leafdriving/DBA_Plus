@@ -130,6 +130,14 @@ class FireBird:
         self.limit = ""
         self.retlist = []
         self.DB = DBA_Manu.DBA(path)
+        self.TM_INTreeOUT = [ ]
+        self.TM_IUTreeOUT = [ ]
+        self.TM_IMTreeOUT = [ ]
+        self.TM_ICTreeOUT = [ ]
+        self.MT_INTreeOUT = [ ]
+        self.MT_IUTreeOUT = [ ]
+        self.MT_IMTreeOUT = [ ]
+        self.MT_ICTreeOUT = [ ]
         
         self.Items = [ ]
         self.cur.execute("SELECT ITEMCODE FROM ITEM")
@@ -323,31 +331,29 @@ def initXMLTree(_GUI):
         os.remove(temp_path + "\\Main.FDB")
     shutil.copy2(Training_path, temp_path + "\\Training.FDB")
     shutil.copy2(Main_path, temp_path + "\\Main.FDB")
-    
-    _GUI.TM_INTree.AddColumn("Transfer")
-    _GUI.MT_INTree.AddColumn("Transfer")
-    _GUI.TM_IUTree.AddColumn("Transfer")        
-    _GUI.MT_IUTree.AddColumn("Transfer")      
+
+    for tree in [ _GUI.TM_INTree, _GUI.MT_INTree, _GUI.TM_IUTree, _GUI.MT_IUTree , _GUI.TM_IMTree , _GUI.MT_IMTree,_GUI.TM_ICTree,_GUI.MT_ICTree]:
+        tree.AddColumn("Transfer")
     for each in FromSettings("./Transfer/ITEM").split(','):
-        _GUI.TM_INTree.AddColumn(each)
-        _GUI.MT_INTree.AddColumn(each)
-        _GUI.TM_IUTree.AddColumn(each)
-        _GUI.MT_IUTree.AddColumn(each)          
+        for tree in [ _GUI.TM_INTree, _GUI.MT_INTree, _GUI.TM_IUTree, _GUI.MT_IUTree ]:
+            tree.AddColumn(each)
+
     _GUI.TM_INTreeRoot = _GUI.TM_INTree.AddRoot("Root")
     _GUI.MT_INTreeRoot = _GUI.MT_INTree.AddRoot("Root")    
     _GUI.TM_IUTreeRoot = _GUI.TM_IUTree.AddRoot("Root")    
     _GUI.MT_IUTreeRoot = _GUI.MT_IUTree.AddRoot("Root")     
 
-    _GUI.TM_IMTree.AddColumn("Transfer")        
-    _GUI.MT_IMTree.AddColumn("Transfer")        
     for each in FromSettings("./Transfer/BOMSTAGES").split(','):
-        _GUI.TM_IMTree.AddColumn(str(each))
-        _GUI.MT_IMTree.AddColumn(str(each))        
+        if str(each) == "BOMMNO":
+            _GUI.TM_IMTree.AddColumn("ITEMCODE")
+            _GUI.MT_IMTree.AddColumn("ITEMCODE")             
+        else:
+            _GUI.TM_IMTree.AddColumn(str(each))
+            _GUI.MT_IMTree.AddColumn(str(each))        
     _GUI.TM_IMTreeRoot = _GUI.TM_IMTree.AddRoot("Root")    
     _GUI.MT_IMTreeRoot = _GUI.MT_IMTree.AddRoot("Root")      
 
-    _GUI.TM_ICTree.AddColumn("Transfer")        
-    _GUI.MT_ICTree.AddColumn("Transfer")      
+  
     for each in FromSettings("./Transfer/BOMDEL").split(','):
         _GUI.TM_ICTree.AddColumn(str(each))
         _GUI.MT_ICTree.AddColumn(str(each))        
@@ -356,15 +362,25 @@ def initXMLTree(_GUI):
     
     x=0
     for width in FromSettings("./Transfer/ITEMCOLWIDTH").split(','):
-        _GUI.TM_INTree.SetColumnWidth(x,int(width))
-        _GUI.MT_INTree.SetColumnWidth(x,int(width))
-        _GUI.TM_IUTree.SetColumnWidth(x,int(width))
-        _GUI.MT_IUTree.SetColumnWidth(x,int(width))
+        for tree in [_GUI.TM_INTree, _GUI.MT_INTree,_GUI.TM_IUTree,_GUI.MT_IUTree]:
+            tree.SetColumnWidth(x,int(width))
         x +=1      
-    
+
+    x=0
+    for width in FromSettings("./Transfer/BOMSTAGESCOLWIDTH").split(','):
+        _GUI.TM_IMTree.SetColumnWidth(x,int(width))
+        _GUI.MT_IMTree.SetColumnWidth(x,int(width))
+        x +=1
+
+    x=0
+    for width in FromSettings("./Transfer/BOMDELCOLWIDTH").split(','):
+        _GUI.TM_ICTree.SetColumnWidth(x,int(width))
+        _GUI.MT_ICTree.SetColumnWidth(x,int(width))
+        x +=1            
     
     OpenDBAFile(_GUI,temp_path + "\\Training.FDB","Training")
     OpenDBAFile(_GUI,temp_path + "\\Main.FDB","Main")
+    
     
     
 ###################################################  definition end #############################################################################################
@@ -373,6 +389,24 @@ def initXMLTree(_GUI):
 
 
 parseStr = lambda x: x.isalpha() and x or x.isdigit() and int(x) or x.isalnum() and x or len(set(string.punctuation).intersection(x)) == 1 and x.count('.') == 1 and float(x) or x
+
+def writeCSS(fulllist,filename):
+    delm = "|"
+    out = ""
+    for lst in fulllist:
+        for item in lst[:-1]:
+            out += item + delm
+        out += lst[-1] + "\n"
+    f = open(filename,'w')
+    f.write(out)     
+    f.close()
+
+def Transfer():
+    FB = XMLFileList[1]
+    writeCSS(FB.TM_INTreeOUT,FromSettings("./DBAFiles/TempPath")+"\\NewItem.csv")
+    writeCSS(FB.TM_IUTreeOUT,FromSettings("./DBAFiles/TempPath")+"\\UpdateItem.csv")
+    writeCSS(FB.TM_IMTreeOUT,FromSettings("./DBAFiles/TempPath")+"\\Method.csv")
+    writeCSS(FB.TM_ICTreeOUT,FromSettings("./DBAFiles/TempPath")+"\\Component.csv")    
 
 def UpdateTransfer(cNode,_GUI):
     if cNode.XMLFileListNo == -2:
@@ -385,30 +419,82 @@ def UpdateTransfer(cNode,_GUI):
         ODB = XMLFileList[2].DB
     else:
         print "From Where????"
-#    CTree.SetItemTextColour( CTreeNode, "BLUE")    
 
-    UpdateTransferFillItemTree(_GUI.TM_INTree , _GUI.TM_INTreeRoot,DB,ODB,cNode.text,1)
+    UpdateTransferFillItemTree(_GUI.TM_INTree , _GUI.TM_INTreeRoot,DB,ODB,cNode.text,1,_GUI)
     _GUI.TM_INTree.ExpandAll(_GUI.TM_INTreeRoot)
     
-    UpdateTransferFillItemTree(_GUI.TM_IUTree , _GUI.TM_IUTreeRoot,DB,ODB,cNode.text,2)
+    UpdateTransferFillItemTree(_GUI.TM_IUTree , _GUI.TM_IUTreeRoot,DB,ODB,cNode.text,2,_GUI)
     _GUI.TM_IUTree.ExpandAll(_GUI.TM_IUTreeRoot)
 
-    UpdateTransferFillItemTree(_GUI.TM_IMTree , _GUI.TM_IMTreeRoot,DB,ODB,cNode.text,3)
+    UpdateTransferFillItemTree(_GUI.TM_IMTree , _GUI.TM_IMTreeRoot,DB,ODB,cNode.text,3,_GUI)
     _GUI.TM_IMTree.ExpandAll(_GUI.TM_IMTreeRoot)
     
-    UpdateTransferFillItemTree(_GUI.TM_ICTree , _GUI.TM_ICTreeRoot,DB,ODB,cNode.text,4)
+    UpdateTransferFillItemTree(_GUI.TM_ICTree , _GUI.TM_ICTreeRoot,DB,ODB,cNode.text,4,_GUI)
     _GUI.TM_ICTree.ExpandAll(_GUI.TM_ICTreeRoot)    
 
     
-def SetMethodData(CTree,cNode,Method,DB,ODB):
-    S = FromSettings("./Transfer/BOMSTAGES").split(',')
-    Method.dic[ each ]
-    x=1
-    for each in S:
-        CTree.SetItemText( cNode ,  Method.dic[ each ] , x )
-        x += 1      
+def SetMethodData(CTree,cNode,Method,DB,ODB,cITEMCODE):
+    s = FromSettings("./Transfer/BOMSTAGES") 
+    sl = s.split(',')
+    dbBOMMNO = DB.select("BOMMNO","BOMMASTER","WHERE PITEMCODE LIKE '" + cITEMCODE + "'")[1][0]
+    odbBOMMNO = ODB.select("BOMMNO","BOMMASTER","WHERE PITEMCODE LIKE '" + cITEMCODE + "'")
+    AI = False # Already Identical
+    if len(odbBOMMNO) > 1:
+        odbBOMMNO = odbBOMMNO[1][0]
+        dbs  =  DB.select(s,"BOMSTAGES"," WHERE STAGE LIKE '" + Method.dic[ "STAGE" ] + "' AND BOMMNO = " + dbBOMMNO + "")[1]
+        odbs  =  ODB.select(s,"BOMSTAGES"," WHERE STAGE LIKE '" + Method.dic[ "STAGE" ] + "' AND BOMMNO = " + odbBOMMNO + "")
+        if len(odbs) > 1:
+            odbs = odbs[1]
+            if dbs == odbs:
+                AI = True
+    if AI:
+        for x in [1,2,3]:
+            if sl[x-1] != "BOMMNO":
+                CTree.SetItemText( cNode , dbs[x-1],x)
+            else:
+                CTree.SetItemText( cNode , cITEMCODE,x)
+        CTree.SetItemText( cNode , "Already Identical",4)
+        CTree.SetItemTextColour( cNode, "GRAY")
+    else:
+        x=1
+        templist = [ ]
+        for each in sl:
+            if sl[x-1] != "BOMMNO":
+                CTree.SetItemText( cNode ,  dbs[x-1] , x )
+                templist.append( dbs[x-1] )
+            else:
+                CTree.SetItemText( cNode ,  cITEMCODE , x )
+                templist.append( cITEMCODE )
+            x += 1
+        XMLFileList[1].TM_IMTreeOUT.append( templist )
+        CTree.SetItemTextColour( cNode, "BLUE")           
+
+        
+def SetSubItemData(CTree,cNode,CItem,DB,ODB,pNode):
+    s = FromSettings("./Transfer/BOMDEL") 
+    sl = s.split(',')
+    dbs  =  DB.select(s,"BOMDEL"," WHERE PITEMCODE LIKE '" + CTree.GetItemText(pNode) + "' AND CITEMCODE LIKE '" + CTree.GetItemText(cNode) + "'")
+    odbs  =  ODB.select(s,"BOMDEL"," WHERE PITEMCODE LIKE '" + CTree.GetItemText(pNode) + "' AND CITEMCODE LIKE '" + CTree.GetItemText(cNode) + "'")    
+    if len(dbs) != 1:
+        if dbs == odbs:
+            dbs = dbs[1]
+            for x in [1,2,3]:
+                CTree.SetItemText( cNode ,  dbs[x-1] , x )
+            CTree.SetItemText( cNode ,  "Already Identical"  , 4 )
+            CTree.SetItemTextColour( cNode, "GRAY")
+        else:
+            dbs = dbs[1]
+            x=1
+            templist = [ ]
+            for each in sl:
+                CTree.SetItemText( cNode ,  dbs[x-1] , x )
+                templist.append( dbs[x-1] )
+                x += 1
+            XMLFileList[1].TM_ICTreeOUT.append( templist )
+            CTree.SetItemTextColour( cNode, "BLUE")
 
 def SetItemData(CTree,cNode,CItem,DB,ODB,Type):
+    FB = XMLFileList[1]    
     S = FromSettings("./Transfer/ITEM").split(',')
     IsItem = ODB.IsItem(CItem.Field(S[0]))    
     if Type == 1:
@@ -421,9 +507,12 @@ def SetItemData(CTree,cNode,CItem,DB,ODB,Type):
         else:
             CTree.SetItemTextColour( cNode, "BLUE")            
             x=1
+            templist = [ ]
             for each in S:
                 CTree.SetItemText( cNode ,  CItem.Field(each) , x )
-                x += 1      
+                templist.append( CItem.Field(each) )
+                x += 1
+            FB.TM_INTreeOUT.append( templist )
     elif Type == 2:
         if IsItem:
             dbs  =  DB.select(FromSettings("./Transfer/ITEM"),"ITEM"," WHERE ITEMCODE LIKE '" + CItem.Field(S[0]) + "'")
@@ -437,9 +526,12 @@ def SetItemData(CTree,cNode,CItem,DB,ODB,Type):
             else:
                 CTree.SetItemTextColour( cNode, "BLUE")            
                 x=1
+                templist = [ ]
                 for each in S:
                     CTree.SetItemText( cNode ,  CItem.Field(each) , x )
-                    x += 1  
+                    templist.append( CItem.Field(each) )
+                    x += 1
+                FB.TM_IUTreeOUT.append( templist )
         else:
             CTree.SetItemText( cNode ,  CItem.Field(S[0]) , 1 )
             CTree.SetItemText( cNode ,  CItem.Field(S[1]) , 2 )
@@ -453,26 +545,38 @@ def SetItemData(CTree,cNode,CItem,DB,ODB,Type):
         pass
    
 
-
-def UpdateTransferFillItemTree(CTree,cNodeParent,DB,ODB,cITEMCODE,Type,Firstloop = True):
+def UpdateTransferFillItemTree(CTree,cNodeParent,DB,ODB,cITEMCODE,Type,_GUI,Firstloop = True):
     CItem = DB.Item(cITEMCODE)
     
     if Type == 3:
         if Firstloop:
             cNode = CTree.AppendItem( cNodeParent , CItem.Field("ITEMCODE") )
+            CTree.SetPyData(cNode , None)
+            CTree.SetItemImage(cNode , _GUI.iconITEM , wx.TreeItemIcon_Normal)                 
             cNodeParent = cNode
     else:
         cNode = CTree.AppendItem( cNodeParent , CItem.Field("ITEMCODE") )
-        if Type != 4:
+        CTree.SetPyData(cNode , None)
+        if Firstloop:
+            CTree.SetItemImage(cNode , _GUI.iconITEM , wx.TreeItemIcon_Normal)
+        else:
+            CTree.SetItemImage(cNode , _GUI.iconSUBITEM , wx.TreeItemIcon_Normal)            
+        if Type == 4:
+            if not Firstloop:
+                SetSubItemData(CTree,cNode,CItem,DB,ODB,cNodeParent)
+        else:
             SetItemData(CTree,cNode,CItem,DB,ODB,Type)
     
     for Method in CItem:
         CMethod = Method.Field("WORKCENTERNAME")
         if Type == 3:
             cNode = CTree.AppendItem( cNodeParent , "(" + Method.Field("STAGE") + ") " + CMethod + " (" + CItem.Field("ITEMCODE") + ")" )
-            SetMethodData(CTree,cNode,Method,DB,ODB)
+            CTree.SetPyData(cNode , None)
+            CTree.SetItemImage(cNode , _GUI.iconMETHOD , wx.TreeItemIcon_Normal)              
+            #if not Firstloop:
+            SetMethodData(CTree,cNode,Method,DB,ODB,CItem.Field("ITEMCODE"))
         for SubItem in Method:
-            UpdateTransferFillItemTree(CTree,cNode,DB,ODB,SubItem.item.Field("ITEMCODE"),Type, False)
+            UpdateTransferFillItemTree(CTree,cNode,DB,ODB,SubItem.item.Field("ITEMCODE"),Type,_GUI, False)
 
 
 def formattime( seconds ):
@@ -504,11 +608,7 @@ def UpdateHTMLHelp(_GUI):
 def UpdateHTMLDisplay(cNode,_GUI,qmult=1):
     DB = XMLFileList[cNode.XMLFileListNo * -1].DB
     JinjaItem = FromSettings("./Html/JinjaItem")
-    JinjaBlocks = FromSettings("./Html/JinjaBlocks")
-    btemplate = Template(JinjaBlocks)
-    template = Template(JinjaItem)
-    temp = DB.SubItem( DB.Item(cNode.text), 1)
-    html = template.render( SubItemList = [ temp ] , Blocks = btemplate)
+    html = Template(JinjaItem).render( SubItemList = [ DB.SubItem( DB.Item(cNode.text), 1) ] , Mult = 1, Indent = 16, Incrent = 16)
     
     _GUI.Display_Jinja.SetValue(JinjaItem)    
     _GUI.Display_Source.SetValue(html)

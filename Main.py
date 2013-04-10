@@ -116,15 +116,19 @@ def EH(Event,_GUI, evt = ""):
         os._exit(1)
 #        sys.exit()
 #        quit()
+    elif Event == "EH_Execute":
+        LiefXML.Transfer()
     else:
         print "Event Not Found:",Event
 
 
 if __name__ == "__main__":
+    print "one"
     MainID = wx.PySimpleApp(0)
     wx.InitAllImageHandlers()
-    
+    print "two"
     _GUI = MainGui.MGUI(None, -1, "")
+    print "three"
     MainID.SetTopWindow(_GUI)
     _GUI.Show()
 

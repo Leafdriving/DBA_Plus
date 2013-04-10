@@ -13,9 +13,13 @@
     <MASTER>PITEMCODE, BOMMNO</MASTER>
   </Tables>
   <Transfer>
+    <ITEMCOLWIDTH>300,130,280,30,60,30,300</ITEMCOLWIDTH>
     <ITEM>ITEMCODE,DESCRIPT,UOM,CATEGORY,MORP,PICTURE</ITEM>
-    <BOMSTAGES>STAGE,BOMMNO,DESCRIPT,WORKCENTERNAME,UTILIZATION,SETUPHOURS,PARTSHOUR,PROCESS_ID,MACHINESID</BOMSTAGES>	
-    <BOMDEL>PITEMCODE,CITEMCODE,DESCRIPT,LINNO,USAGE,BOMMNO,NOTES,STAGEID</BOMDEL>
+	<BOMSTAGESCOLWIDTH>250,40,130,130,120,40,40,40,100,120</BOMSTAGESCOLWIDTH>
+    <BOMSTAGES>STAGE,BOMMNO,DESCRIPT,WORKCENTERNAME,UTILIZATION,SETUPHOURS,PARTSHOUR,PROCESS_ID,MACHINESID</BOMSTAGES>
+	<BOMDELCOLWIDTH>250,40,130,130,280,40,40,200</BOMDELCOLWIDTH>
+    <BOMDEL>STAGEID,PITEMCODE,CITEMCODE,DESCRIPT,LINNO,USAGE,NOTES</BOMDEL>
+	<ITEMDOCCOLWIDTH></ITEMDOCCOLWIDTH>
     <ITEMDOC>ITEMID,DESCRIPT,DIREC,ITEMDOC_DOCTYPE</ITEMDOC>
   </Transfer>
   <Html>
@@ -115,24 +119,74 @@ http://wxpython.org/Phoenix/docs/html/html_overview.html
 </table>
     ]]></BOMSTAGES>
   <BOMSTAGES_END></BOMSTAGES_END><!-- BOMSTAGES_END Used to close Tables if desired  -->
-    <JinjaBlocks><![CDATA[
-{% block ItemBlock %}ItemBlock
-{% endblock ItemBlock %}
-
-{% block SubItemBlock %}SubItemBlock
-{% endblock SubItemBlock %}
-
-{% block MethodBlock %}MethodBlock
-{% endblock MethodBlock %}
-
-{% block SOBlock %}SOBlock
-{% endblock SOBlock %}
-
-{% block POBlock %}POBlock
-{% endblock POBlock %}
-
-  ]]></JinjaBlocks>
   <JinjaItem><![CDATA[
+{% macro print_Item( Item , Mult , Indent, Incrent) -%}
+<TABLE WIDTH="1000" BORDER="1" CELLPADDING="2" CELLSPACING="2">
+    <TR>
+      <TD ALIGN="RIGHT" VALIGN="BOTTOM" WIDTH={{ Indent }}>
+      <IMG WIDTH=16 HEIGHT="16" SRC=
+	  {% if Item.Field("MORP") == "M" %}"Icons\SUBITEM-16.png"{% else %}"Icons\PODETL-16.png"{% endif %}
+       ></TD>
+      <TD WIDTH=70><FONT SIZE="+3">x{{ Mult }}</FONT></TD>
+      <TD WIDTH=30><IMG WIDTH="48" HEIGHT="48" ALT="Prod" SRC="Icons\NA-48.png"></td>
+      <TD>
+      <TABLE WIDTH="100%" BORDER="1" CELLPADDING="2" CELLSPACING="2">
+        <TBODY>
+          <TR>
+            <TD><FONT SIZE="+2">{{ Item.Field("ITEMCODE") }}</FONT><BR> 
+            <FONT SIZE="1">{{ Item.Field("DESCRIPT") }}</FONT></TD>
+            <TD WIDTH=300>
+			<FONT COLOR="RED" SIZE="1">Qty On Hand:</FONT><FONT SIZE="1">{{ Item.Field("QTYONHAND") }}</FONT><BR>
+			<FONT COLOR="RED" SIZE="1">Category:</FONT><FONT SIZE="1">({{ Item.Field("MORP") }}){{ Item.Field("CATEGORY") }}</FONT>		
+           </TD>
+          </TR>
+        </TBODY>
+      </TABLE>
+      </TD>
+    </TR>
+</TABLE>
+{% for Method in Item %}
+    {% call print_Method(Method, Mult , Indent + Incrent, Incrent) %}{% endcall %}
+{% endfor %}
+{{ caller() }}
+{%- endmacro %}
+
+{% macro print_Method( Method, Mult, Indent, Incrent ) -%}
+<TABLE WIDTH="1000" BORDER="1" CELLPADDING="2" CELLSPACING="2">
+    <TR>
+      <TD ALIGN="RIGHT" WIDTH={{ Indent }}>
+      <IMG WIDTH="16" HEIGHT="16" SRC="Icons\METHOD-16.png">      
+      </TD>
+      <TD WIDTH=30>{{ Method.Field("STAGE") }}</TD>
+      <TD WIDTH=300>{{ Method.Field("WORKCENTERNAME") }} [ {{ Method.Field("DESCRIPT") }} ]</TD>
+      <TD ALIGN="RIGHT">{{ Method.Field("SETUPHOURS") }}</TD>
+      <TD WIDTH="100">{{ Method.Field("PARTSHOUR") }}</TD>
+    </tr>
+</table>
+{% for SubItem in Method %}
+{% set temp = Mult * 1 %}
+        {% call print_Item(SubItem.item, temp , Indent + Incrent, Incrent) %}{% endcall %}
+{% endfor %}
+{{ caller() }}
+{%- endmacro %}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<HTML>
+<HEAD>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <TITLE>TITLE-Not Visible</TITLE>
+</HEAD>
+<BODY>
+{% set Indent = 16 %}
+{% set Incrent = 16 %}
+{% for SubItem in SubItemList %}
+	{% call print_Item(SubItem.item, SubItem.qty, Indent, Incrent) %}{% endcall %}
+{% endfor %}
+</BODY>
+</HTML>  
+  ]]></JinjaItem>
+  
+  <JinjaItemOld><![CDATA[
   <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <HTML>
 <HEAD>
@@ -185,7 +239,7 @@ http://wxpython.org/Phoenix/docs/html/html_overview.html
 {% endfor %}
 </BODY>
 </HTML>  
-  ]]></JinjaItem>
+  ]]></JinjaItemOld>
   <Help><![CDATA[
   <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
@@ -199,7 +253,7 @@ http://wxpython.org/Phoenix/docs/html/html_overview.html
 PLUS</font><br>
 </div>
 <FONT COLOR="RED">Programmed By:</FONT>Stacy Lief Kelly <a href="">Leafdriving@hotmail.com</a><br>
-<FONT COLOR="RED">Version:</FONT>DBA Plus V1.1 Compiled April 2, 2013<br>
+<FONT COLOR="RED">Version:</FONT>DBA Plus V1.2 Compiled April 9, 2013<br>
 <FONT COLOR="RED">Rights:</FONT><BR>
 This is an open source project, currently under development. USE AT OWN
 RISK. Software supplied AS IS WITHOUT SUPPORT.<br>
