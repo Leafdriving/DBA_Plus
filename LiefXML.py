@@ -146,6 +146,7 @@ class FireBird:
             self.Items.append( str(row[0]) )
             self.NoItems +=1
         self.lastselect = ""
+        self.lastpreselect = ""
         self.Jobs = [ ]
         self.CJobs = [ ]
         self.SO = [ ]
@@ -164,7 +165,7 @@ class FireBird:
                 else:
                     self.Jobs.append( str(row[0]) )
                     self.NoJobs +=1
-    def select(self,item,table="",where="",limit=10000):
+    def select(self,item,table="",where="",limit=10000,_GUI = -1):
         self.item = item
         self.table = table
         self.limit = limit
@@ -173,11 +174,14 @@ class FireBird:
         if table == "":
             exetext = item
         else:
-            exetext = "select " + item + " from " + table + " " + where
-            
+            exetext = "SELECT " + item + " FROM " + table + " " + where
+        
         self.lastselect = exetext
+        
 
-        print exetext
+        print "Select Search Called:",exetext
+        if _GUI != -1:
+            _GUI.NEvent("SQL CALL: " + exetext)
 
         self.cur.close()
         self.cur = self.con.cursor()
@@ -199,7 +203,9 @@ class FireBird:
             x +=1
             if x > (limit-1):
                 break
-        self.retlist = retlist            
+        self.retlist = retlist
+        if _GUI != -1:        
+            _GUI.NEvent("(" + str(len(retlist[0])) + " Columns x" +str(len(retlist)-1) + " Rows=  " + str( len(retlist[0])*(len(retlist)-1) ) + " entries returned)")
         return retlist
     
 class XMLFile:
@@ -229,10 +235,15 @@ class GUITreeNode:
 #            DB = FB.DB
 #            self.DB = DB.Item(self.text)
             self.display = self.text
-            if "M" == FB.select( "MORP","ITEM", " where ITEMCODE like '" + self.text + "'" )[1][0]:
-                _GUI.cicon = _GUI.iconITEM
+            temp = FB.select( "MORP","ITEM", " where ITEMCODE like '" + self.text + "'" )
+            if len(temp) > 1:
+                if "M" == FB.select( "MORP","ITEM", " where ITEMCODE like '" + self.text + "'" )[1][0]:
+                    _GUI.cicon = _GUI.iconITEM
+                else:
+                    _GUI.cicon =_GUI.iconPODETL
             else:
-                _GUI.cicon =_GUI.iconPODETL
+                _GUI.cicon =_GUI.iconERROR
+                _GUI.NError("Item Select: '" + self.text + "' is Neither M or P ??")
         elif self.ctype == "TRANSFER":
             self.display = self.text
             _GUI.cicon = _GUI.iconTRANSFER
@@ -285,6 +296,8 @@ class GUITreeNode:
     
 def initXMLTree(_GUI):
     global html_header,html_footer,html_itemm, html_itemp ,html_bomstages
+    _GUI.SetStatus("Populating Internal Database...")
+    _GUI.Progress1(2,6)
     XMLPathList.append( "Root" )
     root = GUITreeNode( "Root" ,_GUI)
     root.ID = _GUI.Tree.AddRoot('Root')
@@ -313,6 +326,8 @@ def initXMLTree(_GUI):
     _GUI.Tree.SetPyData(DBA.ID, None)
     _GUI.Tree.SetItemImage(DBA.ID, _GUI.iconLABEL , wx.TreeItemIcon_Normal)       
     
+    _GUI.SetStatus("Reading Settings File")
+    _GUI.Progress1(3,6)
     OpenXMLFile(_GUI,SettingsPath)
     _GUI.Update()
     
@@ -359,7 +374,7 @@ def initXMLTree(_GUI):
         _GUI.MT_ICTree.AddColumn(str(each))        
     _GUI.TM_ICTreeRoot = _GUI.TM_ICTree.AddRoot("Root")    
     _GUI.MT_ICTreeRoot = _GUI.MT_ICTree.AddRoot("Root")
-    
+
     x=0
     for width in FromSettings("./Transfer/ITEMCOLWIDTH").split(','):
         for tree in [_GUI.TM_INTree, _GUI.MT_INTree,_GUI.TM_IUTree,_GUI.MT_IUTree]:
@@ -377,10 +392,13 @@ def initXMLTree(_GUI):
         _GUI.TM_ICTree.SetColumnWidth(x,int(width))
         _GUI.MT_ICTree.SetColumnWidth(x,int(width))
         x +=1            
-    
+    _GUI.SetStatus("Reading DBA Training")
+    _GUI.Progress1(4,6)
     OpenDBAFile(_GUI,temp_path + "\\Training.FDB","Training")
+    _GUI.SetStatus("Reading DBA Main")
+    _GUI.Progress1(4,6)    
     OpenDBAFile(_GUI,temp_path + "\\Main.FDB","Main")
-    
+    _GUI.Progress1(0,6)      
     
     
 ###################################################  definition end #############################################################################################
@@ -439,6 +457,8 @@ def SetMethodData(CTree,cNode,Method,DB,ODB,cITEMCODE):
     dbBOMMNO = DB.select("BOMMNO","BOMMASTER","WHERE PITEMCODE LIKE '" + cITEMCODE + "'")[1][0]
     odbBOMMNO = ODB.select("BOMMNO","BOMMASTER","WHERE PITEMCODE LIKE '" + cITEMCODE + "'")
     AI = False # Already Identical
+    dbs = [ ]
+    o0dbs = [ ]
     if len(odbBOMMNO) > 1:
         odbBOMMNO = odbBOMMNO[1][0]
         dbs  =  DB.select(s,"BOMSTAGES"," WHERE STAGE LIKE '" + Method.dic[ "STAGE" ] + "' AND BOMMNO = " + dbBOMMNO + "")[1]
@@ -460,8 +480,11 @@ def SetMethodData(CTree,cNode,Method,DB,ODB,cITEMCODE):
         templist = [ ]
         for each in sl:
             if sl[x-1] != "BOMMNO":
-                CTree.SetItemText( cNode ,  dbs[x-1] , x )
-                templist.append( dbs[x-1] )
+                if dbs == [ ]:
+                    CTree.SetItemText( cNode ,  "Error" , x )
+                else:
+                    CTree.SetItemText( cNode ,  dbs[x-1] , x )
+                    templist.append( dbs[x-1] )
             else:
                 CTree.SetItemText( cNode ,  cITEMCODE , x )
                 templist.append( cITEMCODE )
@@ -606,6 +629,7 @@ def UpdateHTMLHelp(_GUI):
     _GUI.Display_TABS.ChangeSelection(0)
     
 def UpdateHTMLDisplay(cNode,_GUI,qmult=1):
+    _GUI.NEvent("Rendering HTML Display", True)
     DB = XMLFileList[cNode.XMLFileListNo * -1].DB
     JinjaItem = FromSettings("./Html/JinjaItem")
     html = Template(JinjaItem).render( SubItemList = [ DB.SubItem( DB.Item(cNode.text), 1) ] , Mult = 1, Indent = 16, Incrent = 16)
@@ -613,6 +637,7 @@ def UpdateHTMLDisplay(cNode,_GUI,qmult=1):
     _GUI.Display_Jinja.SetValue(JinjaItem)    
     _GUI.Display_Source.SetValue(html)
     _GUI.Display_HTML.SetPage(html)
+    _GUI.NEvent("Idle:", True)
 
 def UpdateHTMLDisplayOLD(cNode,_GUI,qmult=1):
     FB = XMLFileList[cNode.XMLFileListNo * -1]
@@ -692,7 +717,8 @@ def addnode(path,_GUI,ctype="",table="",qty=1,extra="",mult=1):
     
     if XMLPathList.count( path[:x] ) > 0:
         XMLPathList.append( path )        
-        parentID = NodeList[ XMLPathList.index( path[:x] ) ].ID
+        temp = XMLPathList.index( path[:x] )
+        parentID = NodeList[ temp ].ID
         newnode.makedisplay(_GUI,newnode)
         newnode.ID = _GUI.Tree.AppendItem( parentID , newnode.display )
         
@@ -758,6 +784,7 @@ def AddFilter(_GUI):
     FBList = FB.retlist[1:]
     
     if cNode.text == "POrders":
+        _GUI.NEvent( "POrders To TREE: (" + str(len(FBList)) + " Entries)", True )         
         for each in FBList:
             addnode(cNode.path + "/" + each[0],_GUI,"PORDER",table,1,each[1],-1)
             POList = FB.select( "QTY,REFERENCE,SUPPPARTNO","PODETL"," where PONUM like '" + each[0] + "'" )
@@ -766,21 +793,31 @@ def AddFilter(_GUI):
                     addnode(cNode.path + "/" + each[0] + "/" + LI[1],_GUI,"PODETL",table,LI[0],LI[2],-1)
     
     if cNode.text == "SalesOrders":
+        _GUI.NEvent( "SalesOrders To TREE: (" + str(len(FBList)) + " Entries)" , True)         
         for each in FB.retlist[1:]:
             addnode(cNode.path + "/" + each[0],_GUI,"SALES",table,1,each[4],-1)
             for subeach in FB.select("QTY,REFID","JOBDETL"," where JOBNO like '" + each[0] + "'")[1:]:
                 addnode(cNode.path + "/" + each[0] + "/" + subeach[1],_GUI,"SUBITEM",table,subeach[0],"",-1)
 
     if cNode.text == "Jobs":
+        _GUI.NEvent( "Jobs To TREE: (" + str(len(FBList)) + " Entries)" , True )           
         for each in FB.retlist[1:]:
             string = each[1]
             a = string.find(" - ")
             astr = string[:a]
             string = string[a+3:]
             a = string.find(" - ")
-            addnode(cNode.path + "/" + each[0],_GUI,"JOBS",table,int( string[:a] ),string[a+3:],-1)
+            if a == -1:
+                temp = 1
+            else:
+                try:
+                    temp = int( string[:a] )
+                except ValueError:
+                    temp = 1
+            addnode(cNode.path + "/" + each[0],_GUI,"JOBS",table,temp,string[a+3:],-1)
 
     if cNode.text == "Items":
+        _GUI.NEvent( "Items To TREE: (" + str(len(FBList)) + " Entries)" , True)
         for each in FB.retlist[1:]:
             addnode(cNode.path + "/" + each[0],_GUI,"ITEM",table,1,"",-1)
             cBOMMNO = FB.select("BOMMNO","BOMMASTER","where PITEMCODE='" + each[0] + "'")
@@ -792,33 +829,94 @@ def AddFilter(_GUI):
                     subs = FB.select( "USAGE,CITEMCODE", "BOMDEL", " where PITEMCODE='" + each[0] + "' AND STAGEID=" + str( int( eSTAGE[0] ) ))[1:]
                     for esub in subs:
                         addnode(cNode.path + "/" + each[0] + "/" + eSTAGE[2] + "/" + esub[1],_GUI,"SUBITEM",table,esub[0],"",-1)
+                        
+def UpdateSelect(_GUI,Refresh = False):
+    cNode = GetCurrentXMLNode(_GUI)
+    FB = XMLFileList[cNode.XMLFileListNo * -1]    
+    cblist = [ ]
+    for cbox in _GUI.combo_box:
+        cblist.append( cbox.GetValue() )
+    # text formatting
+    print "FB.lastpreselect",FB.lastpreselect
+    NewSelect = "" #FB.lastpreselect
+    if cblist[0] != "":
+        if cblist[1] == "":
+            cblist[1] = "LIKE"            
+            _GUI.combo_box[1].SetValue("LIKE")
+        if cblist[2] == "":
+            pass
+            #retrieve list here
+        else:
+            pass
+        if cblist[1] == "LIKE":
+            NewSelect += " WHERE " + cblist[0] + " " + cblist[1] + " '%" + cblist[2] + "%'"
+        else:
+            NewSelect += " WHERE " + cblist[0] + " " + cblist[1] + " " + cblist[2]
+        
+        if cblist[3] != "":
+            if cblist[4] == "":
+                cblist[4] = "LIKE"
+                _GUI.combo_box[4].SetValue("LIKE")
+            if cblist[5] == "":
+                pass
+                #retrieve list here
+            else:
+                pass
+            
+            if cblist[4] == "LIKE":
+                NewSelect += " AND " + cblist[3] + " " + cblist[4] + " '%" + cblist[5] + "%'"
+            else:
+                NewSelect += " AND " + cblist[3] + " " + cblist[4] + " " + cblist[5]
+            if cblist[6] != "":
+                if cblist[7] == "":
+                    cblist[7] = "LIKE"
+                    _GUI.combo_box[7].SetValue("LIKE")
+                if cblist[8] == "":
+                    pass
+                    #retrieve list here
+                else:
+                    pass
+                if cblist[7] == "LIKE":
+                    NewSelect += " AND " + cblist[6] + " " + cblist[7] + " '%" + cblist[8] + "%'"
+                else:
+                    NewSelect += " AND " + cblist[6] + " " + cblist[7] + " " + cblist[8]
 
+    _GUI.text_xpath.SetValue( "SELECT " + FB.item + " FROM " + FB.table + NewSelect )
+    if Refresh:
+        print "refresh",FB.item,FB.table ,NewSelect,FB.limit
+        GridList = FB.select( FB.item, FB.table , NewSelect , FB.limit )
+        #print GridList
+        _GUI.DBAGridUpdate( GridList , FB ,FromSettings("./Tables/" + FB.table +  "COLWIDTH").split(","))
+
+    # colour formatting
 def Filter(_GUI):
     cNode = GetCurrentXMLNode(_GUI)
     FB = XMLFileList[cNode.XMLFileListNo * -1]
     atext = ""
     
-    cb1 = _GUI.combo_box_1.GetValue()
+    cb1 = _GUI.combo_box[0].GetValue()
     if cb1 <> "":
-        cb2 = _GUI.combo_box_2.GetValue()
-        cb3 = _GUI.combo_box_3.GetValue()
+        cb2 = _GUI.combo_box[1].GetValue()
+        cb3 = _GUI.combo_box[2].GetValue()
         atext = " where " + cb1 + " " + cb2 + " '" + cb3 + "'"
-        cb4 = _GUI.combo_box_4.GetValue()
+        cb4 = _GUI.combo_box[3].GetValue()
 
         if cb4 <> "":
-            cb5 = _GUI.combo_box_5.GetValue()
-            cb6 = _GUI.combo_box_6.GetValue()
+            cb5 = _GUI.combo_box[4].GetValue()
+            cb6 = _GUI.combo_box[5].GetValue()
      
             atext = "{0} AND where {1} {2} '{3}'".format(atext,cb4,cb5,cb6)
         GridList = FB.select( FB.item, FB.table , atext , FB.limit )
-        _GUI.DBAGridUpdate( GridList , FB )
+        _GUI.DBAGridUpdate( GridList , FB,FromSettings("./Tables/" + FB.table +  "COLWIDTH").split(",") )
 
 def UpdateDBADisplay_Query( Query, _GUI):
     cNode = GetCurrentXMLNode(_GUI)
-    FB = XMLFileList[cNode.XMLFileListNo * -1]    
-
+    FB = XMLFileList[cNode.XMLFileListNo * -1]
+    fbt = FB.table
     GridList = FB.select( Query , "", "" , int( FromSettings("./Tables/DQTY") ) )
-    _GUI.DBAGridUpdate( GridList , FB )
+    FB.table = fbt
+    #print "GRIDLIST",GridList
+    _GUI.DBAGridUpdate( GridList , FB ,FromSettings("./Tables/" + FB.table +  "COLWIDTH").split(","))
     _GUI.Tree_Tabs.ChangeSelection(1)      
 
 def TreeEvent(_GUI):
@@ -861,24 +959,24 @@ def TreeEvent(_GUI):
         FB = XMLFileList[cNode.XMLFileListNo * -1]
         if cNode.text[:5] == "Items":
             print "Items"
-            GridList = FB.select( FromSettings("./Tables/ITEM") , "ITEM", "" , int( FromSettings("./Tables/DQTY") ) )
-            _GUI.DBAGridUpdate( GridList , FB )
+            GridList = FB.select( FromSettings("./Tables/ITEM") , "ITEM", "" , int( FromSettings("./Tables/DQTY") ) , _GUI)
+            _GUI.DBAGridUpdate( GridList , FB ,FromSettings("./Tables/ITEMCOLWIDTH").split(","))
             _GUI.Tree_Tabs.ChangeSelection(1)
         elif cNode.text[:7] == "POrders":
             print "POrders"
-            GridList = FB.select( "PONUM,SUPPNAME,RAISDATE,ADDR1,REGION,STATUS","PORDER"," where STATUS <> 'Closed'", int( FromSettings("./Tables/DQTY") )  )
-            _GUI.DBAGridUpdate( GridList , FB )
+            GridList = FB.select( FromSettings("./Tables/PORDER"),"PORDER"," where STATUS <> 'Closed'", int( FromSettings("./Tables/DQTY") )  )
+            _GUI.DBAGridUpdate( GridList , FB ,FromSettings("./Tables/PORDERCOLWIDTH").split(",") )
             _GUI.Tree_Tabs.ChangeSelection(1)            
         elif cNode.text[:5] == "Sales":
             print "Sales Orders"
             GridList = FB.select( FromSettings("./Tables/JOBS") , "JOBS", "  where JOBNO LIKE 'S%' AND JOBSTATS='ORDERED'" , int( FromSettings("./Tables/DQTY") ) )
-            _GUI.DBAGridUpdate( GridList , FB )
+            _GUI.DBAGridUpdate( GridList , FB ,FromSettings("./Tables/JOBSCOLWIDTH").split(",") )
             _GUI.Tree_Tabs.ChangeSelection(1)
         elif cNode.text[:4] == "Jobs":
             print "Jobs"
             GridList = FB.select( FromSettings("./Tables/JOBS") , "JOBS", "    where JOBNO LIKE 'M%' AND JOBSTATS <> 'CLOSED' AND JOBSTATS <> 'FINISHED'" , int( FromSettings("./Tables/DQTY") ) )
-            _GUI.DBAGridUpdate( GridList , FB )
-            _GUI.Tree_Tabs.ChangeSelection(1)            
+            _GUI.DBAGridUpdate( GridList , FB ,FromSettings("./Tables/JOBSCOLWIDTH").split(","))
+            _GUI.Tree_Tabs.ChangeSelection(1)
         elif cNode.text[:6] == "Closed":
             print "Closed"
         elif (cNode.ctype == "ITEM") or (cNode.ctype == "SUBITEM"):
@@ -889,6 +987,7 @@ def TreeEvent(_GUI):
                     return 1
                 else:
 #                _GUI.MsgBox("SubItem","SubItem- has NO Children")
+                    _GUI.NEvent("Items To TREE ", True)
                     cNode = GetCurrentXMLNode(_GUI)
                     FB = XMLFileList[cNode.XMLFileListNo * -1]
                     table = FB.table
@@ -902,7 +1001,8 @@ def TreeEvent(_GUI):
                             print "error checking ---" + cNode.path + "/" + eSTAGE[2]
                             subs = FB.select( "USAGE,CITEMCODE", "BOMDEL", " where PITEMCODE='" + cNode.text + "' AND STAGEID=" + str( int( eSTAGE[0] ) ))[1:]
                             for esub in subs:
-                                addnode(cNode.path + "/" + eSTAGE[2] + "/" + esub[1],_GUI,"SUBITEM",table,esub[0],"",-1)                
+                                addnode(cNode.path + "/" + eSTAGE[2] + "/" + esub[1],_GUI,"SUBITEM",table,esub[0],"",-1)
+                    _GUI.NEvent("Idle:", True)
         else:
             print "whatd your click?",cNode.text,cNode.table
 def FromSettings( xpath ):
@@ -924,6 +1024,82 @@ def OpenDBAFile(_GUI,filename="",dbname="Other"):
     addnode("DBA-Database/" + dbname + "/Transfer",_GUI,"TRANSFER","",1,"",-1)
     
     
+
+
+    #self.JobTab = wx.Notebook(self.Tree_Tabs, -1, style=wx.NB_LEFT)  #already done
+    NewJobTab = wx.Notebook(_GUI.JobTabList[0], -1, style=0)
+    _GUI.JobTabList.append( NewJobTab )
+    _GUI.JobTabList[0].AddPage(NewJobTab,dbname)
+    
+    tabs = [ ]
+    grids = [ ]
+    data = FB.select(FromSettings("./Tables/STAGE"),"STAGE","WHERE SATAUS <> 'Closed'",10000,_GUI)
+    for each in data[1:]:
+        if each[0] not in tabs:
+            tabs.append( each[0] )
+            NewGrid = wx.grid.Grid(NewJobTab, -1, size=(1, 1))
+            NewGrid.CreateGrid(0,len(each))
+            NewGrid.SetRowLabelSize(20)
+            NewGrid.SetColLabelSize(20)
+            x=0
+            for label in data[0]:
+                NewGrid.SetColLabelValue(x,label)
+                x +=1
+            NewJobTab.AddPage( NewGrid ,each[0] )
+            grids.append( NewGrid )
+        cGrid = grids[ tabs.index(each[0]) ]
+        cGrid.AppendRows(1)
+        cRow = cGrid.GetNumberRows()
+        width = FromSettings("./Tables/STAGECOLWIDTH").split(",")
+        x=0
+        for field in each:
+            cGrid.SetCellValue(cRow-1,x,field)
+            cGrid.SetColSize(x,int(width[x]))
+            x +=1
+            
+#            AppendRows
+#            x=0
+#            while x < len(data)-1:
+#                y=0
+#                for each in data[x+1]:
+#                    NewGrid.SetCellValue(x,y,each)
+#                    y += 1
+#                x += 1            
+
+        
+        
+#    self.TrainingTab = wx.Notebook(self.JobTab, -1, style=0)
+#    self.TrainingStation1Grid = wx.grid.Grid(self.TrainingTab, -1, size=(1, 1))
+#    self.TrainingStation2Grid = wx.grid.Grid(self.TrainingTab, -1, size=(1, 1))
+#    self.MainTab = wx.Notebook(self.JobTab, -1, style=0)
+#    self.MainStation1Grid = wx.grid.Grid(self.MainTab, -1, size=(1, 1))
+#    self.MainStation2Grid = wx.grid.Grid(self.MainTab, -1, size=(1, 1))
+    
+#    self.TrainingTab.AddPage(self.TrainingStation1Grid, "Station1")
+#    self.TrainingTab.AddPage(self.TrainingStation2Grid, "Station2")
+#    self.MainTab.AddPage(self.MainStation1Grid, "Station1")
+#    self.MainTab.AddPage(self.MainStation2Grid, "Station2")
+#    self.JobTab.AddPage(self.TrainingTab, "Training")
+#    self.JobTab.AddPage(self.MainTab, "Main")
+    
+#    self.TrainingStation1Grid.CreateGrid(10, 3)
+#    self.TrainingStation1Grid.SetRowLabelSize(20)
+#    self.TrainingStation1Grid.SetColLabelSize(20)
+#    self.TrainingStation2Grid.CreateGrid(10, 3)
+#    self.TrainingStation2Grid.SetRowLabelSize(20)
+#    self.TrainingStation2Grid.SetColLabelSize(20)
+#    self.MainStation1Grid.CreateGrid(10, 3)
+#    self.MainStation1Grid.SetRowLabelSize(20)
+#    self.MainStation1Grid.SetColLabelSize(20)
+#    self.MainStation2Grid.CreateGrid(10, 3)
+#    self.MainStation2Grid.SetRowLabelSize(20)
+#    self.MainStation2Grid.SetColLabelSize(20)     
+
+
+
+
+
+
     
     
     

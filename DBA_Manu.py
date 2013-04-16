@@ -70,15 +70,18 @@ class Item():
         self.Methods = [ ]
         self.Links = [ ]
         fields = self.out[0]
-        values = self.out[1]
-        x = 0
-        for each in fields:
-            self.dic[ each ] = values[x]
-            x += 1
-        if DB.BOMMNO.has_key(itmn):
-            meths = DB.select( "STAGE,DESCRIPT,WORKCENTERNAME" , "BOMSTAGES", " where BOMMNO =" + DB.BOMMNO[itmn])[1:]
-            for each in meths:
-                self.Methods.append( Method(DB,itmn,each[0]) )
+        if len(self.out) > 1:
+            values = self.out[1]
+            x = 0
+            for each in fields:
+                self.dic[ each ] = values[x]
+                x += 1
+            if DB.BOMMNO.has_key(itmn):
+                meths = DB.select( "STAGE,DESCRIPT,WORKCENTERNAME" , "BOMSTAGES", " where BOMMNO =" + DB.BOMMNO[itmn])[1:]
+                for each in meths:
+                    self.Methods.append( Method(DB,itmn,each[0]) )
+#        else:
+#            values = "ERROR"        
 
         for each in DB.select( "DESCRIPT","ITEMDOC", " where ITEMID like '" + itmn + "'")[1:]:
             self.Links.append( ItemLink(DB,itmn,each[0]) )
@@ -86,7 +89,10 @@ class Item():
         return iter(self.Methods)
     
     def Field(self,f):
-        return self.dic[f]
+        if f in self.dic:
+            return self.dic[f]
+        else:
+            return "ERROR"
 
 class SubItem():
     def __init__(self, ClassItem , qty):

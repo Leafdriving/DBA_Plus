@@ -11,6 +11,7 @@ import wx.gizmos
 import Main
 import sys
 import time
+import mp3play
 
 SysPath = sys.path[0]
 
@@ -73,8 +74,11 @@ class MGUI(wx.Frame):
         self.iconSUBITEM   = self.image_list.Add(wx.Image(IconPath + "SUBITEM-16.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap())
         self.iconXML       = self.image_list.Add(wx.Image(IconPath + "XML-16.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap())
         self.icon3G        = self.image_list.Add(wx.Image(IconPath + "3G-16.ico", wx.BITMAP_TYPE_ICO).ConvertToBitmap())
+        self.iconERROR     = self.image_list.Add(wx.Image(IconPath + "Error-16.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap())
         self.iconTRANSFER  = self.image_list.Add(wx.Image(IconPath + "Transfer-16.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap())
         
+        self.statusnow = self.statuspassed = self.statusthen = 0
+        self.eventnow = self.eventpassed = self.eventthen = 0
 
         # Menu Bar
         self.MainGUI_menubar = wx.MenuBar()
@@ -129,6 +133,7 @@ class MGUI(wx.Frame):
         
         self.MainVert_TreeAndTabs = wx.Notebook(self, -1, style=wx.NB_BOTTOM)
         self.Tree_Items_Divider = wx.SplitterWindow(self.MainVert_TreeAndTabs, -1, style=wx.SP_3D | wx.SP_BORDER)
+        self.Tree_Items_Divider.SetSashPosition(200)
         self.Tree_Panel = wx.Panel(self.Tree_Items_Divider, -1)
         self.Tree = wx.TreeCtrl(self.Tree_Panel, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_EDIT_LABELS | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER | wx.TR_HIDE_ROOT)
         self.Tree.AssignImageList(self.image_list)
@@ -139,15 +144,16 @@ class MGUI(wx.Frame):
         self.Tree_Tabs = wx.Notebook(self.panel_2, -1, style=0)
         self.XMLGrid = wx.grid.Grid(self.Tree_Tabs, -1, size=(1, 1))
         self.notebook_1_pane_2 = wx.Panel(self.Tree_Tabs, -1)
-        self.combo_box_1 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=["", "ITEMCODE", "DESCRIPT", "CATEGORY", "PRICE", "NOTE", "PICTURE", "QTYONHAND"], style=wx.CB_DROPDOWN)
-        self.combo_box_2 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=["=", "<>", ">", "<", ">=", "<=", "BETWEEN", "LIKE", "IN"], style=wx.CB_DROPDOWN)
-        self.combo_box_3 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN)
-        self.combo_box_4 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN)
-        self.combo_box_5 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=["=", "<>", ">=", "<=", "BETWEEN", "LIKE", "IN"], style=wx.CB_DROPDOWN)
-        self.combo_box_6 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN)
-        self.combo_box_7 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN)
-        self.combo_box_8 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=["=", "<>", ">", "<", ">=", "<=", "BETWEEN", "LIKE", "IN"], style=wx.CB_DROPDOWN)
-        self.combo_box_9 = wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN)
+        self.combo_box = [ ]
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=["", "ITEMCODE", "DESCRIPT", "CATEGORY", "PRICE", "NOTE", "PICTURE", "QTYONHAND"], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=["=", "<>", ">", "<", ">=", "<=", "BETWEEN", "LIKE", "IN"], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=["=", "<>", ">=", "<=", "BETWEEN", "LIKE", "IN"], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=["=", "<>", ">", "<", ">=", "<=", "BETWEEN", "LIKE", "IN"], style=wx.CB_DROPDOWN))
+        self.combo_box.append(wx.ComboBox(self.notebook_1_pane_2, -1, choices=[], style=wx.CB_DROPDOWN))
         self.Filter = wx.Button(self.notebook_1_pane_2, -1, "Filter")
         self.Add = wx.Button(self.notebook_1_pane_2, -1, "Add")
         self.DBAGrid = wx.grid.Grid(self.notebook_1_pane_2, -1, size=(1, 1))
@@ -158,11 +164,43 @@ class MGUI(wx.Frame):
         self.Display_Jinja = wx.TextCtrl(self.Display_TABS, -1, "", style=wx.TE_PROCESS_ENTER | wx.TE_MULTILINE)        
 
         self.Tree_Tabs_pane_4 = wx.Panel(self.Tree_Tabs, -1)
-        self.Tree_Tabs_pane_5 = wx.Panel(self.Tree_Tabs, -1)
+        
+        
+#        self.Tree_Tabs_pane_5 = wx.Panel(self.Tree_Tabs, -1)
+        self.JobTabList = [ ] 
+        self.JobTabList.append( wx.Notebook(self.Tree_Tabs, -1, style=wx.NB_LEFT) )
+        
+#        self.TrainingTab = wx.Notebook(self.JobTab, -1, style=0)
+#        self.TrainingStation1Grid = wx.grid.Grid(self.TrainingTab, -1, size=(1, 1))
+#        self.TrainingStation2Grid = wx.grid.Grid(self.TrainingTab, -1, size=(1, 1))
+#        self.MainTab = wx.Notebook(self.JobTab, -1, style=0)
+#        self.MainStation1Grid = wx.grid.Grid(self.MainTab, -1, size=(1, 1))
+#        self.MainStation2Grid = wx.grid.Grid(self.MainTab, -1, size=(1, 1))
+        
+#        self.TrainingTab.AddPage(self.TrainingStation1Grid, "Station1")
+#        self.TrainingTab.AddPage(self.TrainingStation2Grid, "Station2")
+#        self.MainTab.AddPage(self.MainStation1Grid, "Station1")
+#        self.MainTab.AddPage(self.MainStation2Grid, "Station2")
+#        self.JobTab.AddPage(self.TrainingTab, "Training")
+#        self.JobTab.AddPage(self.MainTab, "Main")
+        
+#        self.TrainingStation1Grid.CreateGrid(10, 3)
+#        self.TrainingStation1Grid.SetRowLabelSize(20)
+#        self.TrainingStation1Grid.SetColLabelSize(20)
+#        self.TrainingStation2Grid.CreateGrid(10, 3)
+#        self.TrainingStation2Grid.SetRowLabelSize(20)
+#        self.TrainingStation2Grid.SetColLabelSize(20)
+#        self.MainStation1Grid.CreateGrid(10, 3)
+#        self.MainStation1Grid.SetRowLabelSize(20)
+#        self.MainStation1Grid.SetColLabelSize(20)
+#        self.MainStation2Grid.CreateGrid(10, 3)
+#        self.MainStation2Grid.SetRowLabelSize(20)
+#        self.MainStation2Grid.SetColLabelSize(20)        
+
         self.Tree_Tabs_pane_6 = wx.Panel(self.Tree_Tabs, -1)
   
     
-        self.Export = wx.Notebook(self.Tree_Tabs, -1, style=0)
+        self.Export = wx.Notebook(self.Tree_Tabs, -1, style=wx.NB_LEFT)
         self.T_M = wx.Notebook(self.Export, -1, style=0)
         self.TM_INTree = wx.gizmos.TreeListCtrl(self.T_M, -1, style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
         self.TM_INTree.AssignImageList(self.image_list)
@@ -186,12 +224,13 @@ class MGUI(wx.Frame):
         self.Vslider = wx.Slider(self.panel_2, -1, 0, 0, 10, style=wx.SL_VERTICAL | wx.SL_AUTOTICKS)
         self.Hslider = wx.Slider(self.panel_2, -1, 0, 0, 10, style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS)
         self.HPos = wx.TextCtrl(self.panel_2, -1, "1/10")
-        self.StatusEdit = wx.TextCtrl(self.MainVert_TreeAndTabs, -1, "")
+        self.StatusEdit = wx.TextCtrl(self.MainVert_TreeAndTabs, -1, style = wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_AUTO_URL )
+        self.StatusEdit.SetValue("Init..")
 
         self.Event_Edit = wx.TextCtrl(self.MainVert_TreeAndTabs, -1, style = wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_AUTO_URL )        
         self.Error_Edit = wx.TextCtrl(self.MainVert_TreeAndTabs, -1,  style = wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_AUTO_URL ) 
         self.Settings_Pane = wx.Panel(self.MainVert_TreeAndTabs, -1)
-        self.Status_Text = wx.TextCtrl(self, -1, "Idle:")
+        self.Status_Text = wx.TextCtrl(self, -1, style = wx.TE_READONLY|wx.TE_AUTO_URL|wx.TE_RICH2)
         self.Progress_Top = wx.Gauge(self, -1, 10)
         self.Progress_Bottom = wx.Gauge(self, -1, 10)
         self.Time_Left = wx.TextCtrl(self, -1, "", style=wx.TE_PROCESS_ENTER)
@@ -216,7 +255,7 @@ class MGUI(wx.Frame):
         self.Bind(wx.EVT_TOOL, self.EH_Sales, id=self.tb5.GetId())
         self.Bind(wx.EVT_TOOL, self.EH_Production, id=self.tb6.GetId())
         self.Bind(wx.EVT_TOOL, self.EH_Engineering, id=self.tb7.GetId())
-        self.Bind(wx.EVT_TOOL, self.EH_Timing, id=self.tb7.GetId())
+        self.Bind(wx.EVT_TOOL, self.EH_Timing, id=self.tb8.GetId())
         self.Bind(wx.EVT_TOOL, self.EH_Exit, id=self.tb9.GetId())
         
         self.Bind(wx.EVT_TOOL, self.EH_Help, id=self.MHelp_Help.GetId())
@@ -248,33 +287,33 @@ class MGUI(wx.Frame):
         self.Bind(wx.grid.EVT_GRID_CMD_CELL_LEFT_DCLICK, self.EH_CLDC, self.XMLGrid)
         self.Bind(wx.grid.EVT_GRID_CMD_CELL_RIGHT_CLICK, self.EH_CRC, self.XMLGrid)
         self.Bind(wx.grid.EVT_GRID_CMD_EDITOR_SHOWN, self.EH_CES, self.XMLGrid)
-        self.Bind(wx.EVT_TEXT, self.EH_C1T, self.combo_box_1)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C1TE, self.combo_box_1)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C1, self.combo_box_1)
-        self.Bind(wx.EVT_TEXT, self.EH_C2T, self.combo_box_2)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C2TE, self.combo_box_2)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C2, self.combo_box_2)
-        self.Bind(wx.EVT_TEXT, self.EH_C3T, self.combo_box_3)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C3TE, self.combo_box_3)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C3, self.combo_box_3)
-        self.Bind(wx.EVT_TEXT, self.EH_C4T, self.combo_box_4)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C4TE, self.combo_box_4)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C4, self.combo_box_4)
-        self.Bind(wx.EVT_TEXT, self.EH_C5T, self.combo_box_5)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C5TE, self.combo_box_5)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C5, self.combo_box_5)
-        self.Bind(wx.EVT_TEXT, self.EH_C6T, self.combo_box_6)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C6TE, self.combo_box_6)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C6, self.combo_box_6)
-        self.Bind(wx.EVT_TEXT, self.EH_C6T, self.combo_box_7)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C6TE, self.combo_box_7)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C7, self.combo_box_7)
-        self.Bind(wx.EVT_TEXT, self.EH_C8T, self.combo_box_8)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C8TE, self.combo_box_8)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C8, self.combo_box_8)
-        self.Bind(wx.EVT_TEXT, self.EH_C9T, self.combo_box_9)
-        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C9TE, self.combo_box_9)
-        self.Bind(wx.EVT_COMBOBOX, self.EH_C9, self.combo_box_9)
+        self.Bind(wx.EVT_TEXT, self.EH_C1T, self.combo_box[0])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C1TE, self.combo_box[0])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C1, self.combo_box[0])
+        self.Bind(wx.EVT_TEXT, self.EH_C2T, self.combo_box[1])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C2TE, self.combo_box[1])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C2, self.combo_box[1])
+        self.Bind(wx.EVT_TEXT, self.EH_C3T, self.combo_box[2])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C3TE, self.combo_box[2])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C3, self.combo_box[2])
+        self.Bind(wx.EVT_TEXT, self.EH_C4T, self.combo_box[3])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C4TE, self.combo_box[3])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C4, self.combo_box[3])
+        self.Bind(wx.EVT_TEXT, self.EH_C5T, self.combo_box[4])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C5TE, self.combo_box[4])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C5, self.combo_box[4])
+        self.Bind(wx.EVT_TEXT, self.EH_C6T, self.combo_box[5])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C6TE, self.combo_box[5])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C6, self.combo_box[5])
+        self.Bind(wx.EVT_TEXT, self.EH_C6T, self.combo_box[6])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C6TE, self.combo_box[6])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C7, self.combo_box[6])
+        self.Bind(wx.EVT_TEXT, self.EH_C8T, self.combo_box[7])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C8TE, self.combo_box[7])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C8, self.combo_box[7])
+        self.Bind(wx.EVT_TEXT, self.EH_C9T, self.combo_box[8])
+        self.Bind(wx.EVT_TEXT_ENTER, self.EH_C9TE, self.combo_box[8])
+        self.Bind(wx.EVT_COMBOBOX, self.EH_C9, self.combo_box[8])
         self.Bind(wx.EVT_BUTTON, self.EH_Filter, self.Filter)
         self.Bind(wx.EVT_BUTTON, self.EH_Add, self.Add)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.EH_TTab_Changed, self.Tree_Tabs)
@@ -324,10 +363,10 @@ class MGUI(wx.Frame):
         self.XMLGrid.SetColLabelValue(2, "Child")
         self.XMLGrid.SetColLabelValue(3, "Attrib")
         self.XMLGrid.SetColLabelValue(4, "Value")
-        self.combo_box_1.SetSelection(-1)
-        self.combo_box_2.SetSelection(-1)
-        self.combo_box_5.SetSelection(-1)
-        self.combo_box_8.SetSelection(-1)
+        self.combo_box[0].SetSelection(-1)
+        self.combo_box[1].SetSelection(-1)
+        self.combo_box[4].SetSelection(-1)
+        self.combo_box[7].SetSelection(-1)
         self.Filter.SetMinSize((-1,20))
         self.Add.SetMinSize((-1, 20))
         self.DBAGrid.CreateGrid(10, 3)
@@ -361,15 +400,15 @@ class MGUI(wx.Frame):
         sizer_1.Add(self.text_path, 0, wx.EXPAND, 0)
         sizer_1.Add(self.text_xpath, 0, wx.EXPAND, 0)
         sizer_1.Add(self.text_expansion, 0, wx.EXPAND, 0)
-        sizer_5.Add(self.combo_box_1, 2, 0, 0)
-        sizer_5.Add(self.combo_box_2, 1, 0, 0)
-        sizer_5.Add(self.combo_box_3, 2, 0, 0)
-        sizer_5.Add(self.combo_box_4, 2, 0, 0)
-        sizer_5.Add(self.combo_box_5, 1, 0, 0)
-        sizer_5.Add(self.combo_box_6, 2, 0, 0)
-        sizer_5.Add(self.combo_box_7, 2, 0, 0)
-        sizer_5.Add(self.combo_box_8, 1, 0, 0)
-        sizer_5.Add(self.combo_box_9, 2, 0, 0)
+        sizer_5.Add(self.combo_box[0], 2, 0, 0)
+        sizer_5.Add(self.combo_box[1], 1, 0, 0)
+        sizer_5.Add(self.combo_box[2], 2, 0, 0)
+        sizer_5.Add(self.combo_box[3], 2, 0, 0)
+        sizer_5.Add(self.combo_box[4], 1, 0, 0)
+        sizer_5.Add(self.combo_box[5], 2, 0, 0)
+        sizer_5.Add(self.combo_box[6], 2, 0, 0)
+        sizer_5.Add(self.combo_box[7], 1, 0, 0)
+        sizer_5.Add(self.combo_box[8], 2, 0, 0)
         sizer_5.Add(self.Filter, 1, 0, 0)
         sizer_5.Add(self.Add, 1, 0, 0)
         sizer_4.Add(sizer_5, 0, wx.EXPAND, 0)
@@ -411,7 +450,7 @@ class MGUI(wx.Frame):
         self.Tree_Tabs.SetPageImage(2,self.icon3G)        
         self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_4, "SalesOrder")
         self.Tree_Tabs.SetPageImage(3,self.icon3G)           
-        self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_5, "Jobs")
+        self.Tree_Tabs.AddPage(self.JobTabList[0], "Jobs")
         self.Tree_Tabs.SetPageImage(4,self.icon3G)           
         self.Tree_Tabs.AddPage(self.Tree_Tabs_pane_6, "POs")
         self.Tree_Tabs.SetPageImage(5,self.icon3G)           
@@ -491,6 +530,10 @@ class MGUI(wx.Frame):
         event.Skip()
 
     def EH_Timing(self, event):  # wxGlade: MGUI.<event_handler>
+        #filename =  r'C:\Users\Lief-W7\Desktop\Dropbox\Python\Work\quack.mp3'
+        #print filename
+        #mp3 = mp3play.load(filename)        
+        #mp3.play()        
         Main.EH("EH_Timing", self)
         event.Skip()
 
@@ -813,21 +856,49 @@ class MGUI(wx.Frame):
     def EH_CO(self, event):  # wxGlade: MGUI.<event_handler>
         Main.EH("EH_CO", self)
         event.Skip()
+        
+    def SetStatus(self,Text):
+        self.statusnow = time.clock()
+        self.statuspassed = self.statusnow - self.statusthen
+        self.statusthen = self.statusnow
+        
+        self.Status_Text.SetValue(Text)
+        self.StatusEdit.AppendText(self.formattime(self.statuspassed) + "\n" + Text + "  ")
+        #self.Status_Text.SetStyle(0,len(Text),wx.TextAttr(wx.Colour(200,80,100)))
+        if Text == "Idle:":
+            self.Status_Text.SetBackgroundColour("WHITE")
+        else:
+            self.Status_Text.SetBackgroundColour("RED")
+        self.Refresh()
+
+    def formattime( self , seconds ):
+        minutes = 0
+        hours = 0
+        rettext = ""
+        if seconds > 60:
+            minutes = int(seconds/60.0)
+            if minutes > 60:
+                hours = int(minutes/60.0)
+                rettext += str(hours) + " Hr"
+                minutes = int(seconds/60.0)-hours*60
+            if minutes > 0:
+                rettext += " " + str(minutes) + " Min"
+            seconds -= hours*60*60+minutes*60
+        if seconds > 0 and hours == 0:
+            rettext += " " + str(int(seconds*100)/100.0) + " Sec"
+        return rettext
 
 
     def NError(self,Message):
-        self.Error_Edit.AppendText( Message + "\n" )
+        self.Error_Edit.AppendText( Message + "\n\n" )
         
-    def NEvent(self,Message):
-        self.cEvent = Message
-        self.cEventTime = int(time.clock()*100)/100
-        self.Event_Edit.AppendText( str(self.cEventTime) + " " + Message + " - ")
-        
-    def CEvent(self):
-        ti = str(int((time.clock()-self.cEventTime)*100)/100)
-        self.Event_Edit.AppendText( self.cEvent + " ended " + ti + "\n" )
-        self.cEvent = ""
-        self.cEventTime = 0.0
+    def NEvent(self,Text, AddToStatus = False):
+        self.eventnow = time.clock()
+        self.eventpassed = self.eventnow - self.eventthen
+        self.eventthen = self.eventnow        
+        self.Event_Edit.AppendText(self.formattime(self.eventpassed) + "\n" + Text + "  ")
+        if AddToStatus:
+            self.SetStatus(Text)
         
     def MsgBoxYN(self,Ttext,Message):
         dial = wx.MessageDialog(None, Message, Ttext, wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
@@ -836,6 +907,17 @@ class MGUI(wx.Frame):
     def MsgBox(self,Ttext,Message):
         dial = wx.MessageDialog(None,Message,Ttext, wx.OK)
         return dial.ShowModal()        
+
+    def Progress1(self,Value,Range=-1):
+        if Range != -1:
+            self.Progress_Top.SetRange( Range )
+        self.Progress_Top.SetValue( Value )
+#        self.Progress_Top.Update()        
+#        self.Progress_Top.Refresh()
+
+    def Progress2(self,Value,Range=100):
+        self.Progress_Bottom.SetRange( Range )
+        self.Progress_Bottom.SetValue( Value )
 
     def OpenDBAFiles(self):
         """
@@ -887,7 +969,7 @@ class MGUI(wx.Frame):
 #                y += 1
 #            x += 1        
 
-    def DBAGridUpdate( self, GridList , FB ):
+    def DBAGridUpdate( self, GridList , FB , widthlist):
 
         self.text_path.ChangeValue( FB.path )
         self.text_xpath.ChangeValue( FB.lastselect )
@@ -907,25 +989,27 @@ class MGUI(wx.Frame):
         elif Dr < Gr:
             self.DBAGrid.DeleteRows(0,Gr-Dr)
 
-        t1 = self.combo_box_1.GetValue()
-        t2 = self.combo_box_4.GetValue()
-        t3 = self.combo_box_7.GetValue()
+        t1 = self.combo_box[0].GetValue()
+        t2 = self.combo_box[3].GetValue()
+        t3 = self.combo_box[6].GetValue()
         
-        self.combo_box_1.Clear()
-        self.combo_box_4.Clear()
-        self.combo_box_7.Clear()
+        self.combo_box[0].Clear()
+        self.combo_box[3].Clear()
+        self.combo_box[6].Clear()
         
         x=0        
         for each in GridList[0]:
-            self.DBAGrid.SetColLabelValue(x,each)
-            self.combo_box_1.Append(each)
-            self.combo_box_4.Append(each)
-            self.combo_box_7.Append(each)            
+            temp = self.DBAGrid
+            temp.SetColLabelValue(x,each)
+            temp.SetColSize(x,int(widthlist[x]))
+            self.combo_box[0].Append(each)
+            self.combo_box[3].Append(each)
+            self.combo_box[6].Append(each)            
             x += 1
             
-        self.combo_box_1.SetValue(t1)
-        self.combo_box_4.SetValue(t2)
-        self.combo_box_7.SetValue(t3)
+        self.combo_box[0].SetValue(t1)
+        self.combo_box[3].SetValue(t2)
+        self.combo_box[6].SetValue(t3)
         
         x=0
         while x < len(GridList)-1:
@@ -948,16 +1032,8 @@ class MGUI(wx.Frame):
         paths = [ ]
         if dlg.ShowModal() == wx.ID_OK:
             paths = dlg.GetPaths()
+        dlg.Destroy()            
         return paths
-        dlg.Destroy()
+
         
-    def Progress1(self,Value):
-        if Value == -1:
-            self.Progress_Top.SetValue( 0 )
-        else:
-            self.Progress_Top.SetRange( Value )
-    def Progress2(self,Value):
-        if Value == -1:
-            self.Progress_Bottom.SetValue( 0 )
-        else:
-            self.Progress_Bottom.SetRange( Value )    
+
